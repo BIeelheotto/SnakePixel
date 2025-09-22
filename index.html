@@ -11,8 +11,13 @@
     <title>Snake Game</title>
 </head>
 <body>
+    <!-- Score atual -->
     <div class="score">score: <span class="score--value">00</span></div>
 
+    <!-- Novo campo para mostrar recorde -->
+    <div class="high-score">recorde: <span>00</span></div>
+
+    <!-- Tela de menu/game over -->
     <div class="menu-screen">
         <span class="game-over">game over</span>
         <span class="final-score">score <span>00</span></span>
@@ -21,20 +26,23 @@
             <span class="material-symbols-outlined">
                 play_circle
             </span>
-            
             Jogar novamente
         </button>
     </div>
 
+    <!-- Canvas do jogo -->
     <canvas width="600" height="600"></canvas>
+
+    <!-- Controles mobile -->
     <div class="controls">
-    <button data-dir="up">↑</button>
-    <div>
-        <button data-dir="left">←</button>
-        <button data-dir="down">↓</button>
-        <button data-dir="right">→</button>
+        <button data-dir="up">↑</button>
+        <div>
+            <button data-dir="left">←</button>
+            <button data-dir="down">↓</button>
+            <button data-dir="right">→</button>
+        </div>
     </div>
-</div>
+
     <script src="./js/script.js"></script>
 </body>
 </html>

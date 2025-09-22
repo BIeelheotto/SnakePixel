@@ -7,8 +7,7 @@
     font-family: "Poppings", sans-serif;
 }
 
-body {
-    background-color: #191919;
+body { 
     display: flex;
     min-height: 100vh;
     align-items: center;
@@ -17,10 +16,18 @@ body {
     color: white;
     overflow: hidden; /* trava scroll no mobile */
     touch-action: none; /* desabilita gesto de scroll padrão */
+    background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
 }
+
 
 canvas {
     background-color: #111;
+    width: 90vw;
+    max-width: 600px;
+    height: auto;
+    aspect-ratio: 1 / 1; /* mantém quadrado */
+    border: 3px solid #333;
+    border-radius: 10px;
 }
 
 .score {
@@ -85,7 +92,20 @@ canvas {
     font-size: 2rem;
     border-radius: 10px;
     border: none;
-    background: #333;
+    background: #222;
     color: white;
     cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    transition: transform 0.1s ease;
+}
+
+.controls button:active {
+    transform: scale(0.9);
+    background: #444;
+}
+
+@media (min-width: 768px) {
+    .controls {
+        display: none; /* no desktop */
+    }
 }

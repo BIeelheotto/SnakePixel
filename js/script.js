@@ -1,3 +1,5 @@
+let highScore = localStorage.getItem("snakeHighScore") || 0;
+
 const canvas = document.querySelector("canvas")
 const ctx = canvas.getContext("2d")
 
@@ -9,7 +11,6 @@ const buttonPlay = document.querySelector(".btn-play")
 const audio = new Audio("../assets/assets_audio.mp3")
 
 const size = 30
-
 const initialPosition = { x: 270, y: 240 }
 
 let snake = [initialPosition]
@@ -18,6 +19,7 @@ const incrementScore = () => {
     score.innerText = +score.innerText + 10
 }
 
+// --- Funções utilitárias ---
 const randomNumber = (min, max) => {
     return Math.round(Math.random() * (max - min) + min)
 }
@@ -35,6 +37,27 @@ const randomColor = () => {
     return `rgb(${red}, ${green}, ${blue})`
 }
 
+// --- Função para salvar recorde ---
+const saveHighScore = () => {
+    if (+score.innerText > highScore) {
+        highScore = +score.innerText;
+        localStorage.setItem("snakeHighScore", highScore);
+
+        // atualiza se o elemento existir no HTML
+        const highScoreEl = document.querySelector(".high-score span");
+        if (highScoreEl) {
+            highScoreEl.innerText = highScore;
+        }
+    }
+}
+
+// --- Inicializa o recorde na tela (se tiver no HTML) ---
+const highScoreEl = document.querySelector(".high-score span");
+if (highScoreEl) {
+    highScoreEl.innerText = highScore;
+}
+
+// --- Objeto da comida ---
 const food = {
     x: randomPosition(),
     y: randomPosition(),
@@ -43,6 +66,7 @@ const food = {
 
 let direction, loopId
 
+// --- Desenhar comida ---
 const drawFood = () => {
     const { x, y, color } = food
 
@@ -53,6 +77,7 @@ const drawFood = () => {
     ctx.shadowBlur = 0
 }
 
+// --- Desenhar cobra ---
 const drawSnake = () => {
     ctx.fillStyle = "#ddd"
 
@@ -60,11 +85,11 @@ const drawSnake = () => {
         if (index == snake.length - 1) {
             ctx.fillStyle = "white"
         }
-
         ctx.fillRect(position.x, position.y, size, size)
     })
 }
 
+// --- Movimentar cobra ---
 const moveSnake = () => {
     if (!direction) return
 
@@ -73,15 +98,12 @@ const moveSnake = () => {
     if (direction == "right") {
         snake.push({ x: head.x + size, y: head.y })
     }
-
     if (direction == "left") {
         snake.push({ x: head.x - size, y: head.y })
     }
-
     if (direction == "down") {
         snake.push({ x: head.x, y: head.y + size })
     }
-
     if (direction == "up") {
         snake.push({ x: head.x, y: head.y - size })
     }
@@ -89,6 +111,7 @@ const moveSnake = () => {
     snake.shift()
 }
 
+// --- Desenhar grid ---
 const drawGrid = () => {
     ctx.lineWidth = 1
     ctx.strokeStyle = "#191919"
@@ -106,6 +129,7 @@ const drawGrid = () => {
     }
 }
 
+// --- Checar se comeu ---
 const chackEat = () => {
     const head = snake[snake.length - 1]
 
@@ -128,6 +152,7 @@ const chackEat = () => {
     }
 }
 
+// --- Checar colisão ---
 const checkCollision = () => {
     const head = snake[snake.length - 1]
     const canvasLimit = canvas.width - size
@@ -145,20 +170,27 @@ const checkCollision = () => {
     }
 }
 
+// --- Game over ---
 const gameOver = () => {
-    direction = undefined
+    direction = undefined;
+    saveHighScore(); // salva o recorde
 
-    menu.style.display = "flex"
-    finalScore.innerText = score.innerText
-    canvas.style.filter = "blur(2px)"
+    menu.style.display = "flex";
+    finalScore.innerHTML = `
+        score <span>${score.innerText}</span><br>
+        recorde <span>${highScore}</span>
+    `;
+    canvas.style.filter = "blur(2px)";
 }
 
+// --- Velocidade dinâmica ---
 const getSpeed = () => {
     const baseSpeed = 300
-    const speed = baseSpeed - (snake.length * 5) // diminui o tempo conforme a cobra cresce
-    return Math.max(speed, 80) // garante que não fique mais rápido que 80ms
+    const speed = baseSpeed - (snake.length * 5)
+    return Math.max(speed, 80)
 }
 
+// --- Loop principal ---
 const gameLoop = () => {
     clearInterval(loopId)
 
@@ -172,24 +204,22 @@ const gameLoop = () => {
 
     loopId = setTimeout(() => {
         gameLoop()
-    }, getSpeed()) // aqui em vez de 300, usamos a função getSpeed()
+    }, getSpeed())
 }
 
 gameLoop()
 
+// --- Controles por teclado ---
 document.addEventListener("keydown", ({ key }) => {
     if (key == "ArrowRight" && direction != "left") {
         direction = "right"
     }
-
     if (key == "ArrowLeft" && direction != "right") {
         direction = "left"
     }
-
     if (key == "ArrowDown" && direction != "up") {
         direction = "down"
     }
-
     if (key == "ArrowUp" && direction != "down") {
         direction = "up"
     }
@@ -199,27 +229,25 @@ document.addEventListener("keydown", ({ key }) => {
 let startX, startY
 
 canvas.addEventListener("touchstart", e => {
-    e.preventDefault() // evita o scroll
+    e.preventDefault()
     const touch = e.touches[0]
     startX = touch.clientX
     startY = touch.clientY
 }, { passive: false })
 
 canvas.addEventListener("touchend", e => {
-    e.preventDefault() // evita o scroll
+    e.preventDefault()
     const touch = e.changedTouches[0]
     const diffX = touch.clientX - startX
     const diffY = touch.clientY - startY
 
     if (Math.abs(diffX) > Math.abs(diffY)) {
-        // movimento horizontal
         if (diffX > 0 && direction !== "left") {
             direction = "right"
         } else if (diffX < 0 && direction !== "right") {
             direction = "left"
         }
     } else {
-        // movimento vertical
         if (diffY > 0 && direction !== "up") {
             direction = "down"
         } else if (diffY < 0 && direction !== "down") {
@@ -228,8 +256,7 @@ canvas.addEventListener("touchend", e => {
     }
 }, { passive: false })
 
-// --- Controles por botões ---
-
+// --- Botão de jogar novamente ---
 buttonPlay.addEventListener("click", () => {
     score.innerText = "00"
     menu.style.display = "none"
