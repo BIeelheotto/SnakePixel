@@ -1,266 +1,263 @@
 let highScore = localStorage.getItem("snakeHighScore") || 0;
 
-const canvas = document.querySelector("canvas")
-const ctx = canvas.getContext("2d")
+const canvas = document.querySelector("canvas");
+const ctx = canvas.getContext("2d");
 
-const score = document.querySelector(".score--value")
-const finalScore = document.querySelector(".final-score > span")
-const menu = document.querySelector(".menu-screen")
-const buttonPlay = document.querySelector(".btn-play")
+const score = document.querySelector(".score--value");
+const finalScore = document.querySelector(".final-score > span");
+const menu = document.querySelector(".menu-screen");
+const buttonPlay = document.querySelector(".btn-play");
 
-const audio = new Audio("../assets/assets_audio.mp3")
+const audio = new Audio("../assets/assets_audio.mp3");
 
-const size = 30
-const initialPosition = { x: 270, y: 240 }
+const size = 30;
+const initialPosition = { x: 270, y: 240 };
 
-let snake = [initialPosition]
+let snake = [initialPosition];
+let direction;
+let obstacles = [];
+let lastRender = 0;
+let speed = 300; // ms entre movimentos
 
+// --- Score ---
 const incrementScore = () => {
-    score.innerText = +score.innerText + 10
-}
+    score.innerText = +score.innerText + 10;
+};
 
-// --- Funções utilitárias ---
-const randomNumber = (min, max) => {
-    return Math.round(Math.random() * (max - min) + min)
-}
+// --- Utilitários ---
+const randomNumber = (min, max) => Math.round(Math.random() * (max - min) + min);
 
 const randomPosition = () => {
-    const number = randomNumber(0, canvas.width - size)
-    return Math.round(number / 30) * 30
-}
+    const number = randomNumber(0, canvas.width - size);
+    return Math.round(number / size) * size;
+};
 
 const randomColor = () => {
-    const red = randomNumber(0, 255)
-    const green = randomNumber(0, 255)
-    const blue = randomNumber(0, 255)
+    const r = randomNumber(50, 255);
+    const g = randomNumber(50, 255);
+    const b = randomNumber(50, 255);
+    return `rgb(${r}, ${g}, ${b})`;
+};
 
-    return `rgb(${red}, ${green}, ${blue})`
-}
-
-// --- Função para salvar recorde ---
+// --- Recorde ---
 const saveHighScore = () => {
     if (+score.innerText > highScore) {
         highScore = +score.innerText;
         localStorage.setItem("snakeHighScore", highScore);
-
-        // atualiza se o elemento existir no HTML
         const highScoreEl = document.querySelector(".high-score span");
-        if (highScoreEl) {
-            highScoreEl.innerText = highScore;
-        }
+        if (highScoreEl) highScoreEl.innerText = highScore;
     }
-}
-
-// --- Inicializa o recorde na tela (se tiver no HTML) ---
+};
 const highScoreEl = document.querySelector(".high-score span");
-if (highScoreEl) {
-    highScoreEl.innerText = highScore;
-}
+if (highScoreEl) highScoreEl.innerText = highScore;
 
-// --- Objeto da comida ---
+// --- Comida ---
 const food = {
     x: randomPosition(),
     y: randomPosition(),
     color: randomColor()
-}
+};
 
-let direction, loopId
+// --- Obstáculos ---
+const generateObstacles = () => {
+    obstacles = [];
+    const currentScore = +score.innerText;
 
-// --- Desenhar comida ---
-const drawFood = () => {
-    const { x, y, color } = food
+    if (currentScore > 0 && currentScore % 30 === 0) {
+        for (let i = 0; i < 3; i++) {
+            let x, y;
+            do {
+                x = randomPosition();
+                y = randomPosition();
+            } while (
+                snake.some(p => p.x === x && p.y === y) ||
+                (food.x === x && food.y === y)
+            );
+            obstacles.push({ x, y, w: size, h: size });
+        }
+    }
+};
 
-    ctx.shadowColor = color
-    ctx.shadowBlur = 6
-    ctx.fillStyle = color
-    ctx.fillRect(x, y, size, size)
-    ctx.shadowBlur = 0
-}
+const drawObstacles = () => {
+    ctx.fillStyle = "red";
+    obstacles.forEach(obs => ctx.fillRect(obs.x, obs.y, obs.w, obs.h));
+};
 
-// --- Desenhar cobra ---
+const checkObstacleCollision = () => {
+    const head = snake[snake.length - 1];
+    return obstacles.some(
+        obs =>
+            head.x < obs.x + obs.w &&
+            head.x + size > obs.x &&
+            head.y < obs.y + obs.h &&
+            head.y + size > obs.y
+    );
+};
+
+// --- Cobra ---
 const drawSnake = () => {
-    ctx.fillStyle = "#ddd"
+    snake.forEach((pos, i) => {
+        ctx.fillStyle = i === snake.length - 1 ? "white" : "#ddd";
+        ctx.fillRect(pos.x, pos.y, size, size);
+    });
+};
 
-    snake.forEach((position, index) => {
-        if (index == snake.length - 1) {
-            ctx.fillStyle = "white"
-        }
-        ctx.fillRect(position.x, position.y, size, size)
-    })
-}
-
-// --- Movimentar cobra ---
 const moveSnake = () => {
-    if (!direction) return
+    if (!direction) return;
+    const head = { ...snake[snake.length - 1] };
 
-    const head = snake[snake.length - 1]
+    if (direction === "right") head.x += size;
+    if (direction === "left") head.x -= size;
+    if (direction === "down") head.y += size;
+    if (direction === "up") head.y -= size;
 
-    if (direction == "right") {
-        snake.push({ x: head.x + size, y: head.y })
-    }
-    if (direction == "left") {
-        snake.push({ x: head.x - size, y: head.y })
-    }
-    if (direction == "down") {
-        snake.push({ x: head.x, y: head.y + size })
-    }
-    if (direction == "up") {
-        snake.push({ x: head.x, y: head.y - size })
-    }
+    snake.push(head);
+    snake.shift();
+};
 
-    snake.shift()
-}
-
-// --- Desenhar grid ---
+// --- Grid ---
 const drawGrid = () => {
-    ctx.lineWidth = 1
-    ctx.strokeStyle = "#191919"
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#191919";
+    for (let i = size; i < canvas.width; i += size) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
 
-    for (let i = 30; i < canvas.width; i += 30) {
-        ctx.beginPath()
-        ctx.lineTo(i, 0)
-        ctx.lineTo(i, 600)
-        ctx.stroke()
-
-        ctx.beginPath()
-        ctx.lineTo(0, i)
-        ctx.lineTo(600, i)
-        ctx.stroke()
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
     }
-}
+};
 
-// --- Checar se comeu ---
-const chackEat = () => {
-    const head = snake[snake.length - 1]
+// --- Comida ---
+const drawFood = () => {
+    ctx.shadowColor = food.color;
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = food.color;
+    ctx.fillRect(food.x, food.y, size, size);
+    ctx.shadowBlur = 0;
+};
 
-    if (head.x == food.x && head.y == food.y) {
-        incrementScore()
-        snake.push(head)
-        audio.play()
+const checkEat = () => {
+    const head = snake[snake.length - 1];
+    if (head.x === food.x && head.y === food.y) {
+        incrementScore();
+        snake.push({ ...head });
+        audio.play();
 
-        let x = randomPosition()
-        let y = randomPosition()
+        let x, y;
+        do {
+            x = randomPosition();
+            y = randomPosition();
+        } while (
+            snake.some(p => p.x === x && p.y === y) ||
+            obstacles.some(obs => obs.x === x && obs.y === y)
+        );
 
-        while (snake.find((position) => position.x == x && position.y == y)) {
-            x = randomPosition()
-            y = randomPosition()
-        }
+        food.x = x;
+        food.y = y;
+        food.color = randomColor();
 
-        food.x = x
-        food.y = y
-        food.color = randomColor()
+        generateObstacles();
+        updateSpeed();
     }
-}
+};
 
-// --- Checar colisão ---
+// --- Colisões ---
 const checkCollision = () => {
-    const head = snake[snake.length - 1]
-    const canvasLimit = canvas.width - size
-    const neckIndex = snake.length - 2
-
+    const head = snake[snake.length - 1];
+    const canvasLimit = canvas.width - size;
     const wallCollision =
-        head.x < 0 || head.x > canvasLimit || head.y < 0 || head.y > canvasLimit
+        head.x < 0 || head.x > canvasLimit || head.y < 0 || head.y > canvasLimit;
 
-    const selfCollision = snake.find((position, index) => {
-        return index < neckIndex && position.x == head.x && position.y == head.y
-    })
+    const bodyCollision = snake.slice(0, -1).some(p => p.x === head.x && p.y === head.y);
 
-    if (wallCollision || selfCollision) {
-        gameOver()
+    if (wallCollision || bodyCollision || checkObstacleCollision()) {
+        gameOver();
     }
-}
+};
 
-// --- Game over ---
+// --- Game Over ---
 const gameOver = () => {
     direction = undefined;
-    saveHighScore(); // salva o recorde
-
+    saveHighScore();
     menu.style.display = "flex";
     finalScore.innerHTML = `
         score <span>${score.innerText}</span><br>
         recorde <span>${highScore}</span>
     `;
     canvas.style.filter = "blur(2px)";
-}
+};
 
 // --- Velocidade dinâmica ---
-const getSpeed = () => {
-    const baseSpeed = 300
-    const speed = baseSpeed - (snake.length * 5)
-    return Math.max(speed, 80)
-}
+const updateSpeed = () => {
+    const baseSpeed = 300;
+    speed = Math.max(baseSpeed - snake.length * 5, 70);
+};
 
-// --- Loop principal ---
-const gameLoop = () => {
-    clearInterval(loopId)
+// --- Loop ---
+const gameLoop = (timestamp) => {
+    if (!lastRender) lastRender = timestamp;
+    const progress = timestamp - lastRender;
 
-    ctx.clearRect(0, 0, 600, 600)
-    drawGrid()
-    drawFood()
-    moveSnake()
-    drawSnake()
-    chackEat()
-    checkCollision()
+    if (progress > speed) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        drawFood();
+        drawObstacles();
+        moveSnake();
+        drawSnake();
+        checkEat();
+        checkCollision();
+        lastRender = timestamp;
+    }
 
-    loopId = setTimeout(() => {
-        gameLoop()
-    }, getSpeed())
-}
+    requestAnimationFrame(gameLoop);
+};
 
-gameLoop()
+requestAnimationFrame(gameLoop);
 
-// --- Controles por teclado ---
+// --- Controles ---
 document.addEventListener("keydown", ({ key }) => {
-    if (key == "ArrowRight" && direction != "left") {
-        direction = "right"
-    }
-    if (key == "ArrowLeft" && direction != "right") {
-        direction = "left"
-    }
-    if (key == "ArrowDown" && direction != "up") {
-        direction = "down"
-    }
-    if (key == "ArrowUp" && direction != "down") {
-        direction = "up"
-    }
-})
+    if (key === "ArrowRight" && direction !== "left") direction = "right";
+    if (key === "ArrowLeft" && direction !== "right") direction = "left";
+    if (key === "ArrowDown" && direction !== "up") direction = "down";
+    if (key === "ArrowUp" && direction !== "down") direction = "up";
+});
 
-// --- Controles por toque (mobile swipe) ---
-let startX, startY
-
+// --- Swipe ---
+let startX, startY;
 canvas.addEventListener("touchstart", e => {
-    e.preventDefault()
-    const touch = e.touches[0]
-    startX = touch.clientX
-    startY = touch.clientY
-}, { passive: false })
+    const touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+}, { passive: true });
 
 canvas.addEventListener("touchend", e => {
-    e.preventDefault()
-    const touch = e.changedTouches[0]
-    const diffX = touch.clientX - startX
-    const diffY = touch.clientY - startY
-
+    const touch = e.changedTouches[0];
+    const diffX = touch.clientX - startX;
+    const diffY = touch.clientY - startY;
     if (Math.abs(diffX) > Math.abs(diffY)) {
-        if (diffX > 0 && direction !== "left") {
-            direction = "right"
-        } else if (diffX < 0 && direction !== "right") {
-            direction = "left"
-        }
+        if (diffX > 0 && direction !== "left") direction = "right";
+        else if (diffX < 0 && direction !== "right") direction = "left";
     } else {
-        if (diffY > 0 && direction !== "up") {
-            direction = "down"
-        } else if (diffY < 0 && direction !== "down") {
-            direction = "up"
-        }
+        if (diffY > 0 && direction !== "up") direction = "down";
+        else if (diffY < 0 && direction !== "down") direction = "up";
     }
-}, { passive: false })
+}, { passive: true });
 
-// --- Botão de jogar novamente ---
+// --- Botão jogar novamente ---
 buttonPlay.addEventListener("click", () => {
-    score.innerText = "00"
-    menu.style.display = "none"
-    canvas.style.filter = "none"
+    score.innerText = "00";
+    menu.style.display = "none";
+    canvas.style.filter = "none";
+    snake = [initialPosition];
+    direction = undefined;
+    obstacles = [];
+    generateObstacles();
+    updateSpeed();
+});
 
-    snake = [initialPosition]
-})
