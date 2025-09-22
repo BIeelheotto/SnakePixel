@@ -199,12 +199,14 @@ document.addEventListener("keydown", ({ key }) => {
 let startX, startY
 
 canvas.addEventListener("touchstart", e => {
+    e.preventDefault() // evita o scroll
     const touch = e.touches[0]
     startX = touch.clientX
     startY = touch.clientY
-})
+}, { passive: false })
 
 canvas.addEventListener("touchend", e => {
+    e.preventDefault() // evita o scroll
     const touch = e.changedTouches[0]
     const diffX = touch.clientX - startX
     const diffY = touch.clientY - startY
@@ -224,7 +226,8 @@ canvas.addEventListener("touchend", e => {
             direction = "up"
         }
     }
-})
+}, { passive: false })
+
 // --- Controles por botões ---
 
 buttonPlay.addEventListener("click", () => {

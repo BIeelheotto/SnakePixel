@@ -15,6 +15,8 @@ body {
     justify-content: center;
     flex-direction: column;
     color: white;
+    overflow: hidden; /* trava scroll no mobile */
+    touch-action: none; /* desabilita gesto de scroll padrão */
 }
 
 canvas {
