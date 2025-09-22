@@ -66,17 +66,25 @@ const generateObstacles = () => {
     if (currentScore > 0 && currentScore % 30 === 0) {
         for (let i = 0; i < 3; i++) {
             let x, y;
-            do {
+            let valid = false;
+
+            while (!valid) {
                 x = randomPosition();
                 y = randomPosition();
-            } while (
-                snake.some(p => p.x === x && p.y === y) ||
-                (food.x === x && food.y === y)
-            );
+
+                const onSnake = snake.some(p => p.x === x && p.y === y);
+                const onFood = (food.x === x && food.y === y);
+
+                if (!onSnake && !onFood) {
+                    valid = true;
+                }
+            }
+
             obstacles.push({ x, y, w: size, h: size });
         }
     }
 };
+
 
 const drawObstacles = () => {
     ctx.fillStyle = "red";
@@ -161,10 +169,11 @@ const checkEat = () => {
         food.y = y;
         food.color = randomColor();
 
-        generateObstacles();
+        generateObstacles(); // agora seguro
         updateSpeed();
     }
 };
+
 
 // --- Colisões ---
 const checkCollision = () => {
