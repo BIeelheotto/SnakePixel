@@ -68,3 +68,22 @@ canvas {
     gap: 5px;
     cursor: pointer;
 }
+
+.controls {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.controls button {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+    border-radius: 10px;
+    border: none;
+    background: #333;
+    color: white;
+    cursor: pointer;
+}

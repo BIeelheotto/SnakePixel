@@ -195,6 +195,38 @@ document.addEventListener("keydown", ({ key }) => {
     }
 })
 
+// --- Controles por toque (mobile swipe) ---
+let startX, startY
+
+canvas.addEventListener("touchstart", e => {
+    const touch = e.touches[0]
+    startX = touch.clientX
+    startY = touch.clientY
+})
+
+canvas.addEventListener("touchend", e => {
+    const touch = e.changedTouches[0]
+    const diffX = touch.clientX - startX
+    const diffY = touch.clientY - startY
+
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+        // movimento horizontal
+        if (diffX > 0 && direction !== "left") {
+            direction = "right"
+        } else if (diffX < 0 && direction !== "right") {
+            direction = "left"
+        }
+    } else {
+        // movimento vertical
+        if (diffY > 0 && direction !== "up") {
+            direction = "down"
+        } else if (diffY < 0 && direction !== "down") {
+            direction = "up"
+        }
+    }
+})
+// --- Controles por botões ---
+
 buttonPlay.addEventListener("click", () => {
     score.innerText = "00"
     menu.style.display = "none"
