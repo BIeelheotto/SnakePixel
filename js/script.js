@@ -191,4 +191,45 @@ $(document).ready(function() {
     // Início
     drawStartScreen();
 });
-atualizção
+
+    // === SWIPE DETECTION PARA MOBILE ===
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    function handleGesture() {
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+
+        // Verifica se é mais horizontal ou vertical
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX > 30 && direction !== 'left') {
+                direction = 'right';
+            } else if (deltaX < -30 && direction !== 'right') {
+                direction = 'left';
+            }
+        } else {
+            if (deltaY > 30 && direction !== 'up') {
+                direction = 'down';
+            } else if (deltaY < -30 && direction !== 'down') {
+                direction = 'up';
+            }
+        }
+    }
+
+    $(canvas).on('touchstart', function(e) {
+        const touch = e.originalEvent.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+    });
+
+    $(canvas).on('touchmove', function(e) {
+        const touch = e.originalEvent.touches[0];
+        touchEndX = touch.clientX;
+        touchEndY = touch.clientY;
+    });
+
+    $(canvas).on('touchend', function(e) {
+        handleGesture();
+    });
