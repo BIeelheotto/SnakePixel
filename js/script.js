@@ -188,10 +188,10 @@ $(document).ready(function() {
         }
     });
 
-    // Início
+        // Início
     drawStartScreen();
 
- // === SWIPE DETECTION PARA MOBILE ===
+    // === SWIPE DETECTION PARA MOBILE ===
     let touchStartX = 0;
     let touchStartY = 0;
     let touchEndX = 0;
@@ -201,7 +201,6 @@ $(document).ready(function() {
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
 
-        // Verifica se é mais horizontal ou vertical
         if (Math.abs(deltaX) > Math.abs(deltaY)) {
             if (deltaX > 30 && direction !== 'left') {
                 direction = 'right';
@@ -221,17 +220,23 @@ $(document).ready(function() {
         const touch = e.originalEvent.touches[0];
         touchStartX = touch.clientX;
         touchStartY = touch.clientY;
+        touchEndX = touchStartX;
+        touchEndY = touchStartY;
+        e.preventDefault(); // Impede scroll
     });
 
     $(canvas).on('touchmove', function(e) {
         const touch = e.originalEvent.touches[0];
         touchEndX = touch.clientX;
         touchEndY = touch.clientY;
+        e.preventDefault(); // Impede scroll
     });
 
     $(canvas).on('touchend', function(e) {
         handleGesture();
+        e.preventDefault(); // Impede scroll
     });
 });
+
 
    
