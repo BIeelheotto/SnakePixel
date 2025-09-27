@@ -1,6 +1,4 @@
 $(document).ready(function() {
-    // --- CONFIGURAÇÕES E VARIÁVEIS GLOBAIS ---
-
     const canvas = $('#gameCanvas')[0];
     const ctx = canvas.getContext('2d');
 
@@ -14,19 +12,34 @@ $(document).ready(function() {
     let highScore = localStorage.getItem('snakeHighScore') || 0;
     let gameOver = false;
     let gameInterval;
-    let snakeSpeed = 100; // velocidade inicial em ms
+    let snakeSpeed = 200; // velocidade inicial lenta
+    let gameStarted = false;
 
     $('#high-score').text(highScore);
 
-    // --- FUNÇÕES PRINCIPAIS DO JOGO ---
+    /** Desenha tela inicial */
+    function drawStartScreen() {
+        ctx.fillStyle = '#7ed957';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        ctx.fillStyle = '#000';
+        ctx.font = "28px 'Press Start 2P', monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("CLASSIC SNAKE", canvas.width / 2, canvas.height / 2 - 20);
+
+        ctx.font = "12px 'Press Start 2P', monospace";
+        ctx.fillText("Press SPACE or Tap", canvas.width / 2, canvas.height / 2 + 20);
+    }
+
+    /** Inicia o jogo */
     function startGame() {
+        gameStarted = true;
         snake = [{ x: 10, y: 10 }];
         direction = 'right';
         score = 0;
         $('#score').text(score);
         gameOver = false;
-        snakeSpeed = 100; // reseta a velocidade inicial
+        snakeSpeed = 200;
         generateFood();
 
         if (gameInterval) clearInterval(gameInterval);
@@ -41,6 +54,7 @@ $(document).ready(function() {
 
     function update() {
         const head = { x: snake[0].x, y: snake[0].y };
+
         switch (direction) {
             case 'up': head.y--; break;
             case 'down': head.y++; break;
@@ -50,30 +64,30 @@ $(document).ready(function() {
 
         snake.unshift(head);
 
-        // --- colisão com comida ---
+        // Comer maçã
         if (head.x === food.x && head.y === food.y) {
-            score++;
+            score += 2; // ✅ agora vale 2 pontos
             $('#score').text(score);
             generateFood();
 
-            // aumenta a velocidade a cada 5 pontos
-            if (score % 5 === 0) {
-                snakeSpeed = Math.max(30, snakeSpeed - 10); // limite mínimo de 30ms
+            if (score % 6 === 0) { // aumenta dificuldade a cada 3 maçãs
+                snakeSpeed = Math.max(50, snakeSpeed - 20);
                 clearInterval(gameInterval);
                 gameInterval = setInterval(gameLoop, snakeSpeed);
             }
         } else {
             snake.pop();
         }
-        
+
         checkCollisions(head);
     }
-    
+
     function checkCollisions(head) {
+        // Colisão com parede
         if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
             endGame();
         }
-
+        // Colisão com corpo
         for (let i = 1; i < snake.length; i++) {
             if (head.x === snake[i].x && head.y === snake[i].y) {
                 endGame();
@@ -82,14 +96,16 @@ $(document).ready(function() {
     }
 
     function draw() {
-        ctx.fillStyle = '#1a1a1a';
+        ctx.fillStyle = '#7ed957';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.fillStyle = '#00ff00';
+        // Cobra
+        ctx.fillStyle = '#000';
         snake.forEach(segment => {
             ctx.fillRect(segment.x * tileSize, segment.y * tileSize, tileSize, tileSize);
         });
 
+        // Comida
         ctx.fillStyle = '#ff0000';
         ctx.fillRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize);
     }
@@ -102,17 +118,11 @@ $(document).ready(function() {
                 y: Math.floor(Math.random() * gridSize)
             };
         } while (isFoodOnSnake(foodPosition));
-        
         food = foodPosition;
     }
-    
+
     function isFoodOnSnake(position) {
-        for (let segment of snake) {
-            if (segment.x === position.x && segment.y === position.y) {
-                return true;
-            }
-        }
-        return false;
+        return snake.some(segment => segment.x === position.x && segment.y === position.y);
     }
 
     function endGame() {
@@ -125,12 +135,38 @@ $(document).ready(function() {
             $('#high-score').text(highScore);
         }
 
-        $('#final-score').text(score);
-        $('#gameOverModal').modal('show');
+        // Mensagem de Game Over
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#fff";
+        ctx.font = "20px 'Press Start 2P', monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 10);
+        ctx.font = "10px 'Press Start 2P', monospace";
+        ctx.fillText("Restarting...", canvas.width / 2, canvas.height / 2 + 20);
+
+        // Reinício automático em 2s
+        setTimeout(() => {
+            if (!gameStarted || gameOver) {
+                drawStartScreen();
+                gameStarted = false;
+            }
+        }, 400);
     }
 
-    // --- CONTROLES ---
+    // Controles teclado
     $(document).on('keydown', function(e) {
+        if (!gameStarted && e.code === "Space") {
+            startGame();
+            return;
+        }
+
+        if (gameOver && e.code === "Space") {
+            startGame();
+            return;
+        }
+
         const key = e.key;
         if ((key === 'ArrowUp' || key.toLowerCase() === 'w') && direction !== 'down') {
             direction = 'up';
@@ -143,20 +179,16 @@ $(document).ready(function() {
         }
     });
 
-    $('#upBtn').on('click', () => { if (direction !== 'down') direction = 'up'; });
-    $('#downBtn').on('click', () => { if (direction !== 'up') direction = 'down'; });
-    $('#leftBtn').on('click', () => { if (direction !== 'right') direction = 'left'; });
-    $('#rightBtn').on('click', () => { if (direction !== 'left') direction = 'right'; });
-
-    $('#restart-button').on('click', function() {
-        $('#gameOverModal').modal('hide');
-        startGame();
+    // Mobile → toque para iniciar ou reiniciar
+    $(canvas).on('click touchstart', function() {
+        if (!gameStarted) {
+            startGame();
+        } else if (gameOver) {
+            startGame();
+        }
     });
 
-    // --- INÍCIO DO JOGO COM BOTÃO ---
-$('#start-button').on('click', function() {
-    $('#start-screen').addClass('d-none');
-    $('#game-container').removeClass('d-none');
-    startGame();
+    // Início
+    drawStartScreen();
 });
-});
+atualizção
