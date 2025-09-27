@@ -191,39 +191,64 @@ $(document).ready(function() {
         // Início
     drawStartScreen();
 
-        // === SWIPE DETECTION OTIMIZADA ===
-    let touchStartX = 0;
-    let touchStartY = 0;
+         // === SWIPE DETECTION COM requestAnimationFrame ===
+    let isSwiping = false;
+    let startX = 0, startY = 0;
+    let rafId = null;
+
+    function detectSwipe(touchX, touchY) {
+        const dx = touchX - startX;
+        const dy = touchY - startY;
+
+        if (Math.abs(dx) > 30 || Math.abs(dy) > 30) {
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 0 && direction !== 'left') {
+                    direction = 'right';
+                } else if (dx < 0 && direction !== 'right') {
+                    direction = 'left';
+                }
+            } else {
+                if (dy > 0 && direction !== 'up') {
+                    direction = 'down';
+                } else if (dy < 0 && direction !== 'down') {
+                    direction = 'up';
+                }
+            }
+
+            // Após detectar uma direção, cancela o rastreio
+            cancelAnimationFrame(rafId);
+            isSwiping = false;
+        } else {
+            rafId = requestAnimationFrame(() => detectSwipe(touchX, touchY));
+        }
+    }
 
     $(canvas).on('touchstart', function(e) {
         const touch = e.originalEvent.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
+        startX = touch.clientX;
+        startY = touch.clientY;
+        isSwiping = true;
     });
 
-    $(canvas).on('touchend', function(e) {
-        const touch = e.originalEvent.changedTouches[0];
-        const touchEndX = touch.clientX;
-        const touchEndY = touch.clientY;
+    $(canvas).on('touchmove', function(e) {
+        if (!isSwiping) return;
 
-        const deltaX = touchEndX - touchStartX;
-        const deltaY = touchEndY - touchStartY;
+        const touch = e.originalEvent.touches[0];
+        const currentX = touch.clientX;
+        const currentY = touch.clientY;
 
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            if (deltaX > 30 && direction !== 'left') {
-                direction = 'right';
-            } else if (deltaX < -30 && direction !== 'right') {
-                direction = 'left';
-            }
-        } else {
-            if (deltaY > 30 && direction !== 'up') {
-                direction = 'down';
-            } else if (deltaY < -30 && direction !== 'down') {
-                direction = 'up';
-            }
+        // Inicia o loop só na primeira vez
+        if (!rafId) {
+            rafId = requestAnimationFrame(() => detectSwipe(currentX, currentY));
         }
 
         e.preventDefault(); // Evita scroll da página
+    });
+
+    $(canvas).on('touchend touchcancel', function(e) {
+        isSwiping = false;
+        cancelAnimationFrame(rafId);
+        rafId = null;
     });
 });
 
