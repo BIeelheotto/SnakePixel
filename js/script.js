@@ -1,250 +1,200 @@
-const Game = {
-  config: {
-    cell: 30,
-    baseSpeed: 200,
-    minSpeed: 60,
-    npcSpawn: [20, 50, 80, 120]
-  },
+$(document).ready(function() {
+    // --- CONFIGURAÇÕES E VARIÁVEIS GLOBAIS ---
 
-  state: {
-    snake: [],
-    dir: "right",
-    food: null,
-    npcs: [],
-    score: 0,
-    ranking: [],
-    running: true,
-    ate: false,
-    lastTime: 0
-  },
+    // Obtém o elemento canvas e seu contexto 2D para desenhar
+    const canvas = $('#gameCanvas')[0];
+    const ctx = canvas.getContext('2d');
 
-  canvas: null,
-  ctx: null,
-  touch: { x: 0, y: 0 },
+    // Define o tamanho de cada "quadrado" no grid do jogo
+    const tileSize = 20;
+    // Calcula quantos quadrados cabem na largura/altura do canvas
+    const gridSize = canvas.width / tileSize;
 
-  init() {
-    this.canvas = $("#gameCanvas")[0];
-    this.ctx = this.canvas.getContext("2d");
-    this.loadRanking();
-    this.reset();
-    this.bindEvents();
-    requestAnimationFrame(this.loop.bind(this));
-  },
+    let snake = []; // Array que armazena as partes do corpo da cobra
+    let direction = 'right'; // Direção inicial da cobra
+    let food = {}; // Objeto para a comida
+    let score = 0; // Pontuação inicial
+    let highScore = localStorage.getItem('snakeHighScore') || 0; // Pega o recorde do navegador
+    let gameOver = false;
+    let gameInterval; // Variável para controlar o loop do jogo
 
-  reset() {
-    this.state.snake = [{x: 150, y: 150}];
-    this.state.dir = "right";
-    this.state.food = this.randomFood();
-    this.state.npcs = [];
-    this.state.score = 0;
-    this.state.running = true;
-    this.updateUI();
-  },
+    // Atualiza o placar de recorde na tela
+    $('#high-score').text(highScore);
 
-  loop(time=0) {
-    requestAnimationFrame(this.loop.bind(this));
-    if (!this.state.running) return;
+    // --- FUNÇÕES PRINCIPAIS DO JOGO ---
 
-    const delta = time - this.state.lastTime;
-    if (delta > this.speed()) {
-      this.moveSnake();
-      this.moveNPCs();
-      this.checkEat();
-      this.checkCollision();
-      this.draw();
-      this.state.lastTime = time;
+    /**
+     * Inicia ou reinicia o jogo, resetando todas as variáveis.
+     */
+    function startGame() {
+        snake = [{ x: 10, y: 10 }]; // Posição inicial da cobra no centro do grid
+        direction = 'right';
+        score = 0;
+        $('#score').text(score);
+        gameOver = false;
+        generateFood(); // Gera a primeira comida
+
+        // Limpa o loop anterior (se houver) e inicia um novo
+        if (gameInterval) clearInterval(gameInterval);
+        gameInterval = setInterval(gameLoop, 100); // A velocidade do jogo (100ms)
     }
-  },
 
-  speed() {
-    return Math.max(this.config.baseSpeed - this.state.snake.length*3, this.config.minSpeed);
-  },
+    /**
+     * O loop principal do jogo, que roda a cada intervalo de tempo.
+     */
+    function gameLoop() {
+        if (gameOver) return;
 
-  draw() {
-    this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
-
-    // food
-    this.ctx.fillStyle = this.state.food.color;
-    this.ctx.fillRect(this.state.food.x,this.state.food.y,this.config.cell,this.config.cell);
-
-    // snake
-    this.state.snake.forEach((s,i)=>{
-      this.ctx.fillStyle = i === this.state.snake.length-1 ? "white":"#aaa";
-      this.ctx.fillRect(s.x,s.y,this.config.cell,this.config.cell);
-    });
-
-    // NPCs
-    this.state.npcs.forEach(n=>{
-      this.ctx.fillStyle = n.color;
-      n.body.forEach(p=>this.ctx.fillRect(p.x,p.y,this.config.cell,this.config.cell));
-    });
-  },
-
-  moveSnake() {
-    const head = this.state.snake[this.state.snake.length-1];
-    let newHead = {...head};
-
-    if (this.state.dir==="right") newHead.x+=this.config.cell;
-    if (this.state.dir==="left") newHead.x-=this.config.cell;
-    if (this.state.dir==="up") newHead.y-=this.config.cell;
-    if (this.state.dir==="down") newHead.y+=this.config.cell;
-
-    this.state.snake.push(newHead);
-    if (!this.state.ate) {
-      this.state.snake.shift();
-    } else {
-      this.state.ate=false;
+        update(); // Atualiza a posição da cobra e verifica colisões
+        draw(); // Desenha tudo na tela
     }
-  },
 
-  moveNPCs() {
-    this.state.npcs.forEach(npc=>{
-      let head = npc.body[npc.body.length-1];
-      let newHead = {...head};
-      if (npc.dir==="right") newHead.x+=this.config.cell;
-      if (npc.dir==="left") newHead.x-=this.config.cell;
-      if (npc.dir==="up") newHead.y-=this.config.cell;
-      if (npc.dir==="down") newHead.y+=this.config.cell;
+    /**
+     * Atualiza o estado do jogo (movimento e colisões).
+     */
+    function update() {
+        // Cria a nova cabeça da cobra com base na direção atual
+        const head = { x: snake[0].x, y: snake[0].y };
+        switch (direction) {
+            case 'up': head.y--; break;
+            case 'down': head.y++; break;
+            case 'left': head.x--; break;
+            case 'right': head.x++; break;
+        }
 
-      if (newHead.x<0||newHead.y<0||newHead.x>=this.canvas.width||newHead.y>=this.canvas.height){
-        const opp = {right:"left", left:"right", up:"down", down:"up"};
-        npc.dir = opp[npc.dir];
-        return;
-      }
+        // Adiciona a nova cabeça ao início do array da cobra
+        snake.unshift(head);
 
-      npc.body.push(newHead);
-      if (npc.body.length>5) npc.body.shift();
-    });
-  },
-
-  checkEat() {
-    const head = this.state.snake[this.state.snake.length-1];
-    if (head.x===this.state.food.x && head.y===this.state.food.y){
-      this.state.score+=10;
-      this.state.food=this.randomFood();
-      this.state.ate=true;
-      if (this.config.npcSpawn.includes(this.state.score)) this.spawnNPC();
-      this.updateUI();
+        // Verifica colisão com a comida
+        if (head.x === food.x && head.y === food.y) {
+            score++; // Aumenta a pontuação
+            $('#score').text(score); // Atualiza o placar
+            generateFood(); // Gera nova comida
+        } else {
+            // Se não comeu, remove o último segmento da cauda para dar a ilusão de movimento
+            snake.pop();
+        }
+        
+        checkCollisions(head);
     }
-  },
+    
+    /**
+    * Verifica todas as possíveis colisões
+    */
+    function checkCollisions(head) {
+        // Colisão com as paredes
+        if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
+            endGame();
+        }
 
-  checkCollision() {
-    const head = this.state.snake[this.state.snake.length-1];
-    const wall = head.x<0||head.y<0||head.x>=this.canvas.width||head.y>=this.canvas.height;
-    const self = this.state.snake.slice(0,-1).some(s=>s.x===head.x && s.y===head.y);
-    const npc = this.state.npcs.some(n=>n.body.some(p=>p.x===head.x&&p.y===head.y));
-    if (wall||self||npc){
-      this.state.running=false;
-      this.gameOver();
+        // Colisão com o próprio corpo
+        for (let i = 1; i < snake.length; i++) {
+            if (head.x === snake[i].x && head.y === snake[i].y) {
+                endGame();
+            }
+        }
     }
-  },
 
-  gameOver() {
-    this.saveRanking();
-    $(".menu-screen").fadeIn();
-    $(".final-score span").text(this.state.score);
-  },
+    /**
+     * Desenha todos os elementos do jogo no canvas.
+     */
+    function draw() {
+        // Limpa o canvas (fundo preto)
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  hideGameOver() {
-    $(".menu-screen").fadeOut();
-  },
+        // Desenha a cobra
+        ctx.fillStyle = '#00ff00'; // Cor da cobra
+        snake.forEach(segment => {
+            ctx.fillRect(segment.x * tileSize, segment.y * tileSize, tileSize, tileSize);
+        });
 
-  updateUI() {
-    $(".score--value").text(this.state.score.toString().padStart(2,"0"));
-    $(".high-score span").text(localStorage.getItem("snakeHigh")||0);
-    this.renderRanking();
-  },
-
-  saveRanking() {
-    let r = JSON.parse(localStorage.getItem("snakeRanking"))||[];
-    r.push(this.state.score);
-    r.sort((a,b)=>b-a);
-    r=r.slice(0,5);
-    localStorage.setItem("snakeRanking",JSON.stringify(r));
-    if (this.state.score>(localStorage.getItem("snakeHigh")||0)){
-      localStorage.setItem("snakeHigh",this.state.score);
+        // Desenha a comida
+        ctx.fillStyle = '#ff0000'; // Cor da comida
+        ctx.fillRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize);
     }
-  },
 
-  loadRanking() {
-    this.state.ranking = JSON.parse(localStorage.getItem("snakeRanking"))||[];
-  },
-
-  renderRanking() {
-    if (this.state.ranking.length===0){
-      $(".ranking").html("<h4>Ranking</h4><p>Nenhuma partida</p>");
-      return;
+    /**
+     * Gera uma nova comida em uma posição aleatória que não esteja sobre a cobra.
+     */
+    function generateFood() {
+        let foodPosition;
+        do {
+            foodPosition = {
+                x: Math.floor(Math.random() * gridSize),
+                y: Math.floor(Math.random() * gridSize)
+            };
+        } while (isFoodOnSnake(foodPosition)); // Repete se a comida aparecer na cobra
+        
+        food = foodPosition;
     }
-    let list=this.state.ranking.map((s,i)=>`<li>#${i+1}: ${s}</li>`).join("");
-    $(".ranking").html(`<h4>Ranking</h4><ul>${list}</ul>`);
-  },
+    
+    /**
+    * Função auxiliar para verificar se a posição gerada para a comida está no corpo da cobra.
+    */
+    function isFoodOnSnake(position) {
+        for (let segment of snake) {
+            if (segment.x === position.x && segment.y === position.y) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-  randomFood() {
-    let pos;
-    do {
-      pos={x:this.randPos(), y:this.randPos(), color:this.randColor()};
-    } while (this.isOccupied(pos));
-    return pos;
-  },
 
-  randPos() {
-    const max = this.canvas.width/this.config.cell;
-    return Math.floor(Math.random()*max)*this.config.cell;
-  },
+    /**
+     * Finaliza o jogo.
+     */
+    function endGame() {
+        gameOver = true;
+        clearInterval(gameInterval); // Para o loop do jogo
 
-  randColor() {
-    return `rgb(${50+Math.random()*150},${50+Math.random()*150},${50+Math.random()*150})`;
-  },
+        // Atualiza o recorde se a pontuação atual for maior
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('snakeHighScore', highScore);
+            $('#high-score').text(highScore);
+        }
 
-  isOccupied(pos) {
-    return this.state.snake.some(s=>s.x===pos.x&&s.y===pos.y) ||
-           this.state.npcs.some(n=>n.body.some(p=>p.x===pos.x&&p.y===pos.y));
-  },
+        // Mostra a tela de Game Over
+        $('#final-score').text(score);
+        $('#gameOverModal').modal('show');
+    }
 
-  spawnNPC() {
-    let pos;
-    do { pos={x:this.randPos(), y:this.randPos()}; }
-    while(this.isOccupied(pos));
-    this.state.npcs.push({
-      body:[pos],
-      dir:["up","down","left","right"][Math.floor(Math.random()*4)],
-      color:"orange"
-    });
-  },
+    // --- CONTROLES (TECLADO E BOTÕES) ---
 
-  bindEvents() {
-    // teclado
-    $(document).keydown(e=>{
-      if (e.key==="ArrowRight" && this.state.dir!=="left") this.state.dir="right";
-      if (e.key==="ArrowLeft" && this.state.dir!=="right") this.state.dir="left";
-      if (e.key==="ArrowUp" && this.state.dir!=="down") this.state.dir="up";
-      if (e.key==="ArrowDown" && this.state.dir!=="up") this.state.dir="down";
-    });
-
-    // swipe
-    $(this.canvas).on("touchstart",e=>{
-      const t=e.originalEvent.touches[0];
-      this.touch={x:t.clientX,y:t.clientY};
-    });
-
-    $(this.canvas).on("touchend",e=>{
-      const t=e.originalEvent.changedTouches[0];
-      const dx=t.clientX-this.touch.x;
-      const dy=t.clientY-this.touch.y;
-      if (Math.abs(dx)>Math.abs(dy)){
-        if (dx>0 && this.state.dir!=="left") this.state.dir="right";
-        else if (dx<0 && this.state.dir!=="right") this.state.dir="left";
-      } else {
-        if (dy>0 && this.state.dir!=="up") this.state.dir="down";
-        else if (dy<0 && this.state.dir!=="down") this.state.dir="up";
-      }
+    /**
+     * Ouve os eventos de teclado para mudar a direção.
+     */
+    $(document).on('keydown', function(e) {
+        const key = e.key;
+        if ((key === 'ArrowUp' || key.toLowerCase() === 'w') && direction !== 'down') {
+            direction = 'up';
+        } else if ((key === 'ArrowDown' || key.toLowerCase() === 's') && direction !== 'up') {
+            direction = 'down';
+        } else if ((key === 'ArrowLeft' || key.toLowerCase() === 'a') && direction !== 'right') {
+            direction = 'left';
+        } else if ((key === 'ArrowRight' || key.toLowerCase() === 'd') && direction !== 'left') {
+            direction = 'right';
+        }
     });
 
-    $(".btn-play").click(()=>{
-      this.hideGameOver();
-      this.reset();
-    });
-  }
-};
+    /**
+     * Adiciona funcionalidade aos botões de controle móvel.
+     */
+    $('#upBtn').on('click', () => { if (direction !== 'down') direction = 'up'; });
+    $('#downBtn').on('click', () => { if (direction !== 'up') direction = 'down'; });
+    $('#leftBtn').on('click', () => { if (direction !== 'right') direction = 'left'; });
+    $('#rightBtn').on('click', () => { if (direction !== 'left') direction = 'right'; });
 
-$(document).ready(()=>Game.init());
+    /**
+     * Reinicia o jogo quando o botão "Jogar Novamente" é clicado.
+     */
+    $('#restart-button').on('click', function() {
+        $('#gameOverModal').modal('hide');
+        startGame();
+    });
+
+    // --- INÍCIO DO JOGO ---
+    startGame();
+});
