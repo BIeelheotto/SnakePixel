@@ -89,6 +89,8 @@ $(document).ready(function () {
     }
 
     function startGame() {
+        $("#start-screen").hide(); // 🔥 oculta tela inicial
+
         gameStarted = true;
         gameOver = false;
         direction = 'right';
@@ -451,9 +453,12 @@ $(document).ready(function () {
         ctx.font = "20px 'Press Start 2P', monospace";
         ctx.textAlign = "center";
         ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 10);
-        ctx.font = "10px 'Press Start 2P', monospace";
-        ctx.fillText("Restarting...", canvas.width / 2, canvas.height / 2 + 20);
-        setTimeout(() => { drawStartScreen(); gameStarted = false; }, 1500);
+
+        setTimeout(() => {
+            $("#start-screen").show(); // 🔥 reaparece a tela inicial
+            gameStarted = false;
+        }, 1500);
+
     }
 
 
