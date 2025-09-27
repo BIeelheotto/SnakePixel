@@ -191,65 +191,41 @@ $(document).ready(function() {
         // Início
     drawStartScreen();
 
-         // === SWIPE DETECTION COM requestAnimationFrame ===
-    let isSwiping = false;
-    let startX = 0, startY = 0;
-    let rafId = null;
-
-    function detectSwipe(touchX, touchY) {
-        const dx = touchX - startX;
-        const dy = touchY - startY;
-
-        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-            if (Math.abs(dx) > Math.abs(dy)) {
-                if (dx > 0 && direction !== 'left') {
-                    direction = 'right';
-                } else if (dx < 0 && direction !== 'right') {
-                    direction = 'left';
-                }
-            } else {
-                if (dy > 0 && direction !== 'up') {
-                    direction = 'down';
-                } else if (dy < 0 && direction !== 'down') {
-                    direction = 'up';
-                }
-            }
-
-            // Após detectar uma direção, cancela o rastreio
-            cancelAnimationFrame(rafId);
-            isSwiping = false;
-        } else {
-            rafId = requestAnimationFrame(() => detectSwipe(touchX, touchY));
-        }
-    }
+         // === SWIPE DETECTION SEM LAG ===
+    let touchStartX = 0;
+    let touchStartY = 0;
 
     $(canvas).on('touchstart', function(e) {
         const touch = e.originalEvent.touches[0];
-        startX = touch.clientX;
-        startY = touch.clientY;
-        isSwiping = true;
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
     });
 
-    $(canvas).on('touchmove', function(e) {
-        if (!isSwiping) return;
+    $(canvas).on('touchend', function(e) {
+        const touch = e.originalEvent.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
 
-        const touch = e.originalEvent.touches[0];
-        const currentX = touch.clientX;
-        const currentY = touch.clientY;
+        // Limite mínimo de movimento para ser considerado swipe
+        const swipeThreshold = 20;
 
-        // Inicia o loop só na primeira vez
-        if (!rafId) {
-            rafId = requestAnimationFrame(() => detectSwipe(currentX, currentY));
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX > swipeThreshold && direction !== 'left') {
+                direction = 'right';
+            } else if (deltaX < -swipeThreshold && direction !== 'right') {
+                direction = 'left';
+            }
+        } else {
+            if (deltaY > swipeThreshold && direction !== 'up') {
+                direction = 'down';
+            } else if (deltaY < -swipeThreshold && direction !== 'down') {
+                direction = 'up';
+            }
         }
 
-        e.preventDefault(); // Evita scroll da página
+        e.preventDefault(); // Impede o scroll da página
     });
 
-    $(canvas).on('touchend touchcancel', function(e) {
-        isSwiping = false;
-        cancelAnimationFrame(rafId);
-        rafId = null;
-    });
 });
 
 
