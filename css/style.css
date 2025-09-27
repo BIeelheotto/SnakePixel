@@ -1,5 +1,5 @@
 body {
-    background-color: #043a08; /* verde clássico */
+    background-color: #181717; /* verde clássico */
     font-family: 'Press Start 2P', monospace;
     display: flex;
     justify-content: center;
@@ -15,7 +15,7 @@ body {
 }
 
 #gameCanvas {
-    background: #7bbf32; /* estilo clássico */
+    background: #171d11; /* estilo clássico */
     border: 4px solid #000;
     image-rendering: pixelated;
     display: block;
