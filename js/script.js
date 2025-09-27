@@ -271,7 +271,17 @@ function updateNPCDirection3() {
         if (!ateFood) snakeRef.pop();
     }
 
-    function respawnNPC(npcId) {
+    let npcRespawnCooldowns = {
+    npc1: 0,
+    npc2: 0,
+    npc3: 0
+};
+
+function respawnNPC(npcId) {
+    const now = Date.now();
+    if (npcRespawnCooldowns[npcId] && now - npcRespawnCooldowns[npcId] < 500) return;
+    npcRespawnCooldowns[npcId] = now;
+
         let newPos;
         do {
             newPos = { x: Math.floor(Math.random() * gridSize), y: Math.floor(Math.random() * gridSize) };
@@ -319,7 +329,36 @@ function updateNPCDirection3() {
     function isOnObstacles(pos) { return obstacles.some(ob => ob.x === pos.x && ob.y === pos.y); }
 
     function generateFood() {
-        let foodPosition;
+    const playerHead = snake[0];
+    const maxAttempts = 50;
+    let found = false;
+    let foodPosition;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        let x = playerHead.x + Math.floor(Math.random() * 7) - 3;
+        let y = playerHead.y + Math.floor(Math.random() * 7) - 3;
+
+        // Limita dentro da grade
+        x = Math.max(0, Math.min(gridSize - 1, x));
+        y = Math.max(0, Math.min(gridSize - 1, y));
+
+        foodPosition = { x, y };
+
+        if (
+            !isOnSnake(foodPosition, snake) &&
+            !isOnSnake(foodPosition, npcSnake) &&
+            !isOnSnake(foodPosition, npcSnake2) &&
+            !isOnSnake(foodPosition, npcSnake3) &&
+            !isOnFood(foodPosition) &&
+            !isOnObstacles(foodPosition)
+        ) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        // fallback aleatório se nenhuma posição próxima estiver disponível
         do {
             foodPosition = { x: Math.floor(Math.random() * gridSize), y: Math.floor(Math.random() * gridSize) };
         } while (
@@ -327,7 +366,7 @@ function updateNPCDirection3() {
             isOnSnake(foodPosition, npcSnake2) || isOnSnake(foodPosition, npcSnake3) ||
             isOnFood(foodPosition) || isOnObstacles(foodPosition)
         );
-
+    }
         foods.push(foodPosition);
     }
 
@@ -435,7 +474,7 @@ $(canvas).on('touchend', function (e) {
     const deltaY = touch.clientY - touchStartY;
 
 
-    const swipeThreshold = 20;
+    const swipeThreshold = 15; // melhor responsividade
 
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
         if (deltaX > swipeThreshold && direction !== 'left') direction = 'right';
