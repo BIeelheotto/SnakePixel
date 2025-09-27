@@ -4,6 +4,11 @@ $(document).ready(function () {
 
     const tileSize = 20;
     const gridSize = canvas.width / tileSize;
+    const bgMusic = new Audio('/assets/music-for-gameSNAKE.mp3');
+    bgMusic.loop = true;  // música em loop
+    bgMusic.volume = 0.3; // volume mais baixo pra não incomodar
+
+    const gameOverSound = new Audio('/assets/GAME-OVER.mp3');
 
     let currentLevel = 1;
 
@@ -94,6 +99,11 @@ $(document).ready(function () {
     function startGame() {
         gameStarted = true;
         gameOver = false;
+
+        // 🔊 Música começa
+        bgMusic.currentTime = 0;
+        bgMusic.play();
+
         direction = 'right';
         npcDirection = 'left';
         npcDirection2 = 'right';
@@ -438,6 +448,13 @@ $(document).ready(function () {
 
     function endGame() {
         gameOver = true;
+
+        // 🔇 Pausa música
+        bgMusic.pause();
+
+        // 🔊 Toca som de derrota
+        gameOverSound.currentTime = 0;
+        gameOverSound.play();
 
         if (score > highScore) {
             highScore = score;
