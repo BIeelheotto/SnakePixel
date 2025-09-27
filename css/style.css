@@ -65,3 +65,6 @@ body {
         display: block;
     }
 }
+ #gameCanvas {
+    touch-action: none;
+}

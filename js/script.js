@@ -191,13 +191,21 @@ $(document).ready(function() {
         // Início
     drawStartScreen();
 
-    // === SWIPE DETECTION PARA MOBILE ===
+        // === SWIPE DETECTION OTIMIZADA ===
     let touchStartX = 0;
     let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
 
-    function handleGesture() {
+    $(canvas).on('touchstart', function(e) {
+        const touch = e.originalEvent.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+    });
+
+    $(canvas).on('touchend', function(e) {
+        const touch = e.originalEvent.changedTouches[0];
+        const touchEndX = touch.clientX;
+        const touchEndY = touch.clientY;
+
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
 
@@ -214,27 +222,8 @@ $(document).ready(function() {
                 direction = 'up';
             }
         }
-    }
 
-    $(canvas).on('touchstart', function(e) {
-        const touch = e.originalEvent.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        touchEndX = touchStartX;
-        touchEndY = touchStartY;
-        e.preventDefault(); // Impede scroll
-    });
-
-    $(canvas).on('touchmove', function(e) {
-        const touch = e.originalEvent.touches[0];
-        touchEndX = touch.clientX;
-        touchEndY = touch.clientY;
-        e.preventDefault(); // Impede scroll
-    });
-
-    $(canvas).on('touchend', function(e) {
-        handleGesture();
-        e.preventDefault(); // Impede scroll
+        e.preventDefault(); // Evita scroll da página
     });
 });
 
