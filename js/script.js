@@ -31,6 +31,8 @@ $(document).ready(function () {
     // Obstáculos (array de posições bloqueadas)
     let obstacles = [];
 
+    const eatSound = new Audio('assets/audio.mp3');
+
     // Configurável: quantidade inicial de comida
     const initialFoodCount = 3;
 
@@ -318,6 +320,7 @@ $(document).ready(function () {
                     score += 5;
                     $('#score').text(score);
                     if (score % 6 === 0) STEP = Math.max(100, STEP - 12);
+                   eatSound.play();  // <-- TOCA O SOM AQUI
                 }
                 break;
             }
