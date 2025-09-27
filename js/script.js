@@ -14,7 +14,7 @@ $(document).ready(function() {
     let highScore = localStorage.getItem('snakeHighScore') || 0;
     let gameOver = false;
     let gameInterval;
-    let snakeSpeed = 100; // velocidade inicial em ms
+    let snakeSpeed = 170; // velocidade inicial em ms
 
     $('#high-score').text(highScore);
 
