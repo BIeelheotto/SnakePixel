@@ -5,26 +5,57 @@ body {
     flex-direction: column;
     min-height: 100vh;
     margin: 0;
+    background-color: #222;
+    font-family: 'Press Start 2P', cursive;
+    color: #00ff00;
+    text-align: center;
 }
 
+/* Tela inicial */
+.start-screen {
+    text-align: center;
+    margin-top: 100px;
+}
+
+.start-screen h1 {
+    font-size: 24px;
+    color: #00ff00;
+    text-shadow: 0 0 10px #00ff00;
+    margin-bottom: 30px;
+}
+
+#start-button {
+    background-color: #00ff00;
+    color: #111;
+    font-size: 16px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#start-button:hover {
+    background-color: #00cc00;
+}
+
+/* Canvas maior */
 canvas {
     background-color: #1a1a1a;
-    border: 2px solid #00ff00; /* Borda verde, estilo retrô */
-    box-shadow: 0 0 15px #00ff00;
+    border: 3px solid #00ff00;
+    box-shadow: 0 0 20px #00ff00;
+    margin-top: 20px;
 }
 
+/* Responsividade */
 #mobile-controls {
-    display: none; /* Escondido por padrão */
+    display: none;
 }
 
-/* Media Query para responsividade */
-/* Se a tela tiver 600px de largura ou menos, aplicamos estas regras */
 @media (max-width: 600px) {
     #mobile-controls {
-        display: block; /* Mostra os controles em telas pequenas */
+        display: block;
     }
-
-    /* Ajusta o tamanho do canvas para caber na tela */
     canvas {
         width: 90vw;
         height: 90vw;

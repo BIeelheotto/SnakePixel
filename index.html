@@ -4,19 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jogo da Cobrinha</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/style.css">
 </head>
 <body class="bg-dark text-white">
 
-    <div class="container text-center mt-4">
+    <!-- TELA INICIAL -->
+    <div id="start-screen" class="start-screen">
+        <h1>🐍 Jogo da Cobrinha 🐍</h1>
+        <button id="start-button">Iniciar Jogo</button>
+    </div>
+
+    <!-- CONTAINER DO JOGO -->
+    <div id="game-container" class="container text-center mt-4 d-none">
         <h1>Jogo da Cobrinha</h1>
         <div class="d-flex justify-content-center my-3">
             <h5 class="mx-3">Pontuação: <span id="score">0</span></h5>
             <h5 class="mx-3">Recorde: <span id="high-score">0</span></h5>
         </div>
 
-        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <canvas id="gameCanvas" width="600" height="600"></canvas> <!-- canvas maior -->
 
         <div id="mobile-controls" class="mt-4">
             <button id="upBtn" class="btn btn-light mx-1">▲</button>
@@ -28,14 +35,13 @@
         </div>
     </div>
 
-    <div class="modal fade" id="gameOverModal" tabindex="-1" role="dialog" aria-labelledby="gameOverModalLabel" aria-hidden="true">
+    <!-- MODAL GAME OVER -->
+    <div class="modal fade" id="gameOverModal" tabindex="-1" role="dialog">
       <div class="modal-dialog" role="document">
-        <div class="modal-content bg-secondary">
+        <div class="modal-content bg-secondary text-white">
           <div class="modal-header">
-            <h5 class="modal-title" id="gameOverModalLabel">Fim de Jogo!</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
+            <h5 class="modal-title">Fim de Jogo!</h5>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
           </div>
           <div class="modal-body">
             Sua pontuação final foi: <span id="final-score">0</span>

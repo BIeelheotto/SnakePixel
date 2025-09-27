@@ -14,7 +14,7 @@ $(document).ready(function() {
     let highScore = localStorage.getItem('snakeHighScore') || 0;
     let gameOver = false;
     let gameInterval;
-    let snakeSpeed = 220; // velocidade inicial em ms
+    let snakeSpeed = 100; // velocidade inicial em ms
 
     $('#high-score').text(highScore);
 
@@ -26,7 +26,7 @@ $(document).ready(function() {
         score = 0;
         $('#score').text(score);
         gameOver = false;
-        snakeSpeed = 220; // reseta a velocidade inicial
+        snakeSpeed = 100; // reseta a velocidade inicial
         generateFood();
 
         if (gameInterval) clearInterval(gameInterval);
@@ -153,6 +153,10 @@ $(document).ready(function() {
         startGame();
     });
 
-    // --- INÍCIO DO JOGO ---
+    // --- INÍCIO DO JOGO COM BOTÃO ---
+$('#start-button').on('click', function() {
+    $('#start-screen').addClass('d-none');
+    $('#game-container').removeClass('d-none');
     startGame();
+});
 });
