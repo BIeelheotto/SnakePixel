@@ -31,7 +31,7 @@ $(document).ready(function () {
     // Obstáculos (array de posições bloqueadas)
     let obstacles = [];
 
-    const eatSound = new Audio('assets/audio.mp3');
+    const eatSound = new Audio('/assets/assets_audio.mp3');
 
     // Configurável: quantidade inicial de comida
     const initialFoodCount = 3;
