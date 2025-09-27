@@ -51,25 +51,28 @@ $(document).ready(function () {
         }
     }, 500);
 
-    function drawStartScreen() {
-        ctx.fillStyle = '#19d108ff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        drawGrid();
+   let blinkTimer = 0;
 
-        ctx.fillStyle = '#020202ff';
-        ctx.font = "28px 'Press Start 2P', monospace";
-        ctx.textAlign = "center";
-        ctx.fillText("CLASSIC SNAKE", canvas.width / 2, canvas.height / 2 - 40);
+function drawStartScreen(deltaTime) {
+    blinkTimer += deltaTime;
+    ctx.fillStyle = '#19d108ff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
 
-        ctx.font = "16px 'Press Start 2P', monospace";
-        ctx.fillText("Nível Atual: " + currentLevel, canvas.width / 2, canvas.height / 2);
+    ctx.fillStyle = '#020202ff';
+    ctx.font = "28px 'Press Start 2P', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("CLASSIC SNAKE", canvas.width / 2, canvas.height / 2 - 40);
 
-        if (showMessage) {
-            ctx.font = "12px 'Press Start 2P', monospace";
-            ctx.fillText("Press SPACE or Tap to Start", canvas.width / 2, canvas.height / 2 + 30);
-            ctx.fillText("Use Arrow/WASD to Move", canvas.width / 2, canvas.height / 2 + 50);
-        }
+    ctx.font = "16px 'Press Start 2P', monospace";
+    ctx.fillText("Nível Atual: " + currentLevel, canvas.width / 2, canvas.height / 2);
+
+    if (Math.floor(blinkTimer / 500) % 2 === 0) {
+        ctx.font = "12px 'Press Start 2P', monospace";
+        ctx.fillText("Press SPACE or Tap to Start", canvas.width / 2, canvas.height / 2 + 30);
+        ctx.fillText("Use Arrow/WASD to Move", canvas.width / 2, canvas.height / 2 + 50);
     }
+}
 
     function drawGrid() {
         ctx.strokeStyle = '#615f5fff';
@@ -167,14 +170,11 @@ $(document).ready(function () {
     }
 
     function updateNPCDirection3() {
-        if (Math.random() < 0.3) {
-            npcDirection3 = getSafeRandomDirection(npcSnake3, 'npc3') || npcDirection3;
-        } else {
-            npcDirection3 = getFoodChasingDirection(npcSnake3, [snake, npcSnake, npcSnake2])
-                || getSafeRandomDirection(npcSnake3, 'npc3')
-                || npcDirection3;
-        }
-    }
+    npcDirection3 = getFoodChasingDirection(npcSnake3, [snake, npcSnake, npcSnake2])
+        || getSafeRandomDirection(npcSnake3, 'npc3')
+        || npcDirection3;
+}
+
 
 
     // Pathfinding simples para buscar comida
@@ -328,65 +328,66 @@ $(document).ready(function () {
 
     function isOnObstacles(pos) { return obstacles.some(ob => ob.x === pos.x && ob.y === pos.y); }
 
-    function generateFood() {
-        const playerHead = snake[0];
-        const minDistanceFromPlayer = 3;
-        const minDistanceFromOtherFoods = 5;
-        const maxDistanceFromPlayer = 10;
-        const maxAttempts = 100;
-        let foodPosition;
-        let found = false;
+   function generateFood() {
+    const playerHead = snake[0];
+    const minDistanceFromPlayer = 3;
+    const minDistanceFromOtherFoods = 5;
 
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            let dx = Math.floor(Math.random() * (2 * maxDistanceFromPlayer + 1)) - maxDistanceFromPlayer;
-            let dy = Math.floor(Math.random() * (2 * maxDistanceFromPlayer + 1)) - maxDistanceFromPlayer;
-
-            if (Math.abs(dx) + Math.abs(dy) < minDistanceFromPlayer) continue;
-
-            let x = playerHead.x + dx;
-            let y = playerHead.y + dy;
-
-            if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) continue;
-
-            foodPosition = { x, y };
-
-            // 🚫 Verifica se é muito perto de outra comida existente
-            let tooCloseToFood = foods.some(existing =>
-                manhattanDistance(foodPosition, existing) < minDistanceFromOtherFoods
-            );
-
+    // 🔹 Lista de posições livres
+    const emptyTiles = [];
+    for (let x = 0; x < gridSize; x++) {
+        for (let y = 0; y < gridSize; y++) {
+            const pos = { x, y };
             if (
-                !isOnSnake(foodPosition, snake) &&
-                !isOnSnake(foodPosition, npcSnake) &&
-                !isOnSnake(foodPosition, npcSnake2) &&
-                !isOnSnake(foodPosition, npcSnake3) &&
-                !isOnObstacles(foodPosition) &&
-                !tooCloseToFood
+                !isOnSnake(pos, snake) &&
+                !isOnSnake(pos, npcSnake) &&
+                !isOnSnake(pos, npcSnake2) &&
+                !isOnSnake(pos, npcSnake3) &&
+                !isOnObstacles(pos) &&
+                !isOnFood(pos)
             ) {
-                found = true;
-                break;
+                emptyTiles.push(pos);
             }
         }
-
-        // Fallback se não encontrar posição válida
-        if (!found) {
-            do {
-                foodPosition = {
-                    x: Math.floor(Math.random() * gridSize),
-                    y: Math.floor(Math.random() * gridSize)
-                };
-            } while (
-                isOnSnake(foodPosition, snake) ||
-                isOnSnake(foodPosition, npcSnake) ||
-                isOnSnake(foodPosition, npcSnake2) ||
-                isOnSnake(foodPosition, npcSnake3) ||
-                isOnFood(foodPosition) ||
-                isOnObstacles(foodPosition)
-            );
-        }
-
-        foods.push(foodPosition);
     }
+
+    // 🔹 Filtra respeitando as distâncias mínimas
+    let validTiles = emptyTiles.filter(pos => {
+        const distPlayer = manhattanDistance(pos, playerHead);
+        const tooCloseToFood = foods.some(existing =>
+            manhattanDistance(pos, existing) < minDistanceFromOtherFoods
+        );
+        return distPlayer >= minDistanceFromPlayer && !tooCloseToFood;
+    });
+
+    let foodPosition;
+
+    if (validTiles.length > 0) {
+        // pega posição aleatória das válidas
+        foodPosition = validTiles[Math.floor(Math.random() * validTiles.length)];
+    } else if (emptyTiles.length > 0) {
+        // se não sobrou nenhuma válida → escolhe qualquer livre
+        foodPosition = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+    } else {
+        // 🔴 Fallback extremo: tenta achar manualmente (quase nunca usado)
+        do {
+            foodPosition = {
+                x: Math.floor(Math.random() * gridSize),
+                y: Math.floor(Math.random() * gridSize)
+            };
+        } while (
+            isOnSnake(foodPosition, snake) ||
+            isOnSnake(foodPosition, npcSnake) ||
+            isOnSnake(foodPosition, npcSnake2) ||
+            isOnSnake(foodPosition, npcSnake3) ||
+            isOnFood(foodPosition) ||
+            isOnObstacles(foodPosition)
+        );
+    }
+
+    foods.push(foodPosition);
+}
+
 
 
     function isOnSnake(pos, snakeRef) { return snakeRef.some(segment => segment.x === pos.x && segment.y === pos.y); }
