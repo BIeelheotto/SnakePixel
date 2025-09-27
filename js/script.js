@@ -5,40 +5,36 @@ $(document).ready(function () {
     const tileSize = 20;
     const gridSize = canvas.width / tileSize;
 
-    // Níveis: 1 (sem obstáculos), 2 (com obstáculos)
-    let currentLevel = 1;
+let currentLevel = 1;
 
-    let snake = [];
-    let npcSnake = [];
-    let direction = 'right';
-    let npcDirection = 'left';
+let snake = [];
+let npcSnake = [];
+let npcSnake2 = [];
+let npcSnake3 = [];
+let direction = 'right';
+let npcDirection = 'left';
+let npcDirection2 = 'right';
+ let npcDirection3 = 'up';
 
-    let npcSnake2 = [];
-    let npcDirection2 = 'right';
+ let foods = [];
+ let score = 0;
+let highScore = parseInt(localStorage.getItem('snakeHighScore')) || 0;
+let gameOver = false;
+let gameStarted = false;
 
-    let foods = [];
-    let score = 0;
-    let highScore = parseInt(localStorage.getItem('snakeHighScore')) || 0;
-    let gameOver = false;
-    let gameStarted = false;
+let lastTime = 0;
+let accumulator = 0;
+let STEP = 250;
 
-    let lastTime = 0;
-    let accumulator = 0;
-    let STEP = 250;
+let showMessage = true;
+let obstacles = [];
 
-    let showMessage = true;
-
-    // Obstáculos (array de posições bloqueadas)
-    let obstacles = [];
-
-    const eatSound = new Audio('/assets/assets_audio.mp3');
-
-    // Configurável: quantidade inicial de comida
-    const initialFoodCount = 3;
+const eatSound = new Audio('/assets/assets_audio.mp3');
+const initialFoodCount = 3;
 
     $('#high-score').text(highScore);
 
-    // --- Atualizar tamanho da cobra ---
+    // --- HUD tamanho cobra ---
     function updateSizeDisplay() {
         if ($('#snake-size').length === 0) {
             $('#scoreboard').append('<span id="snake-size" style="margin-left:20px">Tamanho: 1</span>');
@@ -55,20 +51,18 @@ $(document).ready(function () {
         }
     }, 500);
 
-    function drawStartScreen() {
-        ctx.fillStyle = '#19d108ff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Desenha grade no fundo (malha quadriculada)
+function drawStartScreen() {
+    ctx.fillStyle = '#19d108ff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
         drawGrid();
 
-        ctx.fillStyle = '#020202ff';
-        ctx.font = "28px 'Press Start 2P', monospace";
-        ctx.textAlign = "center";
-        ctx.fillText("CLASSIC SNAKE", canvas.width / 2, canvas.height / 2 - 40);
+    ctx.fillStyle = '#020202ff';
+    ctx.font = "28px 'Press Start 2P', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("CLASSIC SNAKE", canvas.width / 2, canvas.height / 2 - 40);
 
-        ctx.font = "16px 'Press Start 2P', monospace";
-        ctx.fillText("Nível Atual: " + currentLevel, canvas.width / 2, canvas.height / 2);
+    ctx.font = "16px 'Press Start 2P', monospace";
+    ctx.fillText("Nível Atual: " + currentLevel, canvas.width / 2, canvas.height / 2);
 
         if (showMessage) {
             ctx.font = "12px 'Press Start 2P', monospace";
@@ -77,8 +71,7 @@ $(document).ready(function () {
         }
     }
 
-    // --- Desenhar grade ---
-    function drawGrid() {
+function drawGrid() {
         ctx.strokeStyle = '#615f5fff';
         ctx.lineWidth = 1;
         for (let x = 0; x <= canvas.width; x += tileSize) {
@@ -101,20 +94,20 @@ $(document).ready(function () {
         direction = 'right';
         npcDirection = 'left';
         npcDirection2 = 'right';
+        npcDirection3 = 'up';
 
         snake = [{ x: 10, y: 10 }];
         npcSnake = [{ x: 20, y: 10 }];
-        npcSnake2 = [{ x: 10, y: 20 }];  // posição inicial da nova NPC2
+        npcSnake2 = [{ x: 10, y: 20 }];
+        npcSnake3 = [{ x: 15, y: 15 }];
 
         score = 0;
         STEP = 250;
         $('#score').text(score);
         updateSizeDisplay();
 
-        // Define obstáculos conforme o nível
-        obstacles = [];
-        if (currentLevel === 2) {
-            // Exemplo obstáculos formando um "muro" no meio
+obstacles = [];
+    if (currentLevel === 2) {
             for (let i = 5; i < 15; i++) {
                 obstacles.push({ x: i, y: 10 });
             }
@@ -133,44 +126,65 @@ $(document).ready(function () {
     function gameLoop(timestamp) {
         if (!lastTime) lastTime = timestamp;
         const deltaTime = timestamp - lastTime;
-        lastTime = timestamp;
 
-        accumulator += deltaTime;
+    lastTime = timestamp;
+    accumulator += deltaTime;
 
         while (accumulator >= STEP) {
             update();
             accumulator -= STEP;
         }
 
-        draw();
-
+    draw();
         if (!gameOver) requestAnimationFrame(gameLoop);
     }
 
     function update() {
         updateNPCDirection();
         updateNPCDirection2();
+        updateNPCDirection3();
 
         moveSnake(snake, direction, true);
-        moveSnake(npcSnake, npcDirection, false);
-        moveSnake(npcSnake2, npcDirection2, false);
+        moveSnake(npcSnake, npcDirection, false, 'npc1');
+        moveSnake(npcSnake2, npcDirection2, false, 'npc2');
+        moveSnake(npcSnake3, npcDirection3, false, 'npc3');
 
         checkPlayerCollisions();
 
         updateSizeDisplay();
     }
 
-    // --- Atualiza direção NPC1 com pathfinding simples evitando obstáculos e outras cobras ---
-    function updateNPCDirection() {
-        const head = npcSnake[0];
-        if (foods.length === 0) {
-            npcDirection = getSafeRandomDirection(npcSnake);
-            return;
-        }
+function updateNPCDirection() {
+    npcDirection = getFoodChasingDirection(npcSnake, [snake, npcSnake2, npcSnake3]) 
+                || getSafeRandomDirection(npcSnake, 'npc1') 
+                || npcDirection;
+}
 
-        // Encontra comida mais próxima
+function updateNPCDirection2() {
+    npcDirection2 = getFoodChasingDirection(npcSnake2, [snake, npcSnake, npcSnake3]) 
+                 || getSafeRandomDirection(npcSnake2, 'npc2') 
+                 || npcDirection2;
+}
+
+function updateNPCDirection3() {
+    if (Math.random() < 0.3) {
+        npcDirection3 = getSafeRandomDirection(npcSnake3, 'npc3') || npcDirection3;
+    } else {
+        npcDirection3 = getFoodChasingDirection(npcSnake3, [snake, npcSnake, npcSnake2]) 
+                     || getSafeRandomDirection(npcSnake3, 'npc3') 
+                     || npcDirection3;
+    }
+}
+
+
+    // Pathfinding simples para buscar comida
+    function getFoodChasingDirection(npcSnakeRef, otherSnakes) {
+        if (npcSnakeRef.length === 0 || foods.length === 0) return getSafeRandomDirection(npcSnakeRef);
+
+    const head = npcSnakeRef[0];
         let closestFood = foods[0];
         let minDist = manhattanDistance(head, closestFood);
+
         for (let food of foods) {
             let dist = manhattanDistance(head, food);
             if (dist < minDist) {
@@ -179,21 +193,19 @@ $(document).ready(function () {
             }
         }
 
-        // Avalia próximas posições para melhor direção
-        const possibleDirs = ['up', 'down', 'left', 'right'];
+    const possibleDirs = ['up', 'down', 'left', 'right'];
         let bestDir = null;
         let bestDist = Infinity;
 
         for (const dir of possibleDirs) {
-            const nextPos = getNextPosition(head, dir);
 
+    const nextPos = getNextPosition(head, dir);
             if (
                 nextPos.x >= 0 && nextPos.x < gridSize &&
                 nextPos.y >= 0 && nextPos.y < gridSize &&
-                !isOnSnake(nextPos, npcSnake) &&
-                !isOnSnake(nextPos, snake) &&
-                !isOnSnake(nextPos, npcSnake2) &&
-                !isOnObstacles(nextPos)
+                !isOnSnake(nextPos, npcSnakeRef) &&
+                !isOnObstacles(nextPos) &&
+                !otherSnakes.some(s => isOnSnake(nextPos, s))
             ) {
                 const distToFood = manhattanDistance(nextPos, closestFood);
                 if (distToFood < bestDist) {
@@ -203,69 +215,10 @@ $(document).ready(function () {
             }
         }
 
-        if (bestDir) {
-            npcDirection = bestDir;
-        } else {
-            npcDirection = getSafeRandomDirection(npcSnake);
-        }
+        return bestDir || getSafeRandomDirection(npcSnakeRef);
     }
 
-    // --- Atualiza direção NPC2 com pathfinding simples evitando obstáculos e outras cobras ---
-    function updateNPCDirection2() {
-        const head = npcSnake2[0];
-        if (foods.length === 0) {
-            npcDirection2 = getSafeRandomDirection(npcSnake2);
-            return;
-        }
-
-        // Encontra comida mais próxima
-        let closestFood = foods[0];
-        let minDist = manhattanDistance(head, closestFood);
-        for (let food of foods) {
-            let dist = manhattanDistance(head, food);
-            if (dist < minDist) {
-                minDist = dist;
-                closestFood = food;
-            }
-        }
-
-        // Avalia próximas posições para melhor direção
-        const possibleDirs = ['up', 'down', 'left', 'right'];
-        let bestDir = null;
-        let bestDist = Infinity;
-
-        for (const dir of possibleDirs) {
-            const nextPos = getNextPosition(head, dir);
-
-            if (
-                nextPos.x >= 0 && nextPos.x < gridSize &&
-                nextPos.y >= 0 && nextPos.y < gridSize &&
-                !isOnSnake(nextPos, npcSnake2) &&
-                !isOnSnake(nextPos, snake) &&
-                !isOnSnake(nextPos, npcSnake) &&
-                !isOnObstacles(nextPos)
-            ) {
-                const distToFood = manhattanDistance(nextPos, closestFood);
-                if (distToFood < bestDist) {
-                    bestDist = distToFood;
-                    bestDir = dir;
-                }
-            }
-        }
-
-        if (bestDir) {
-            npcDirection2 = bestDir;
-        } else {
-            npcDirection2 = getSafeRandomDirection(npcSnake2);
-        }
-    }
-
-    // Distância Manhattan
-    function manhattanDistance(p1, p2) {
-        return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
-    }
-
-    // Próxima posição dado direção
+    function manhattanDistance(p1, p2) { return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y); }
     function getNextPosition(pos, dir) {
         const newPos = { x: pos.x, y: pos.y };
         switch (dir) {
@@ -277,8 +230,9 @@ $(document).ready(function () {
         return newPos;
     }
 
-    // Move cobra considerando obstáculos e colisões
-    function moveSnake(snakeRef, dir, isPlayer = false) {
+    function moveSnake(snakeRef, dir, isPlayer = false, npcId = null) {
+        if (snakeRef.length === 0) return;
+
         const head = { x: snakeRef[0].x, y: snakeRef[0].y };
         switch (dir) {
             case 'up': head.y--; break;
@@ -287,29 +241,16 @@ $(document).ready(function () {
             case 'right': head.x++; break;
         }
 
-        // Verifica colisão com paredes
-        if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
-            if (isPlayer) endGame();
-            else return; // NPC para se colidir com parede
+        if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize || isOnObstacles(head)) {
+            if (isPlayer) endGame(); else respawnNPC(npcId);
             return;
         }
 
-        // Verifica colisão com obstáculos
-        if (isOnObstacles(head)) {
-            if (isPlayer) endGame();
-            else return; // NPC para se colidir com obstáculo
-            return;
+        if (!isPlayer && isOnSnake(head, snake)) { respawnNPC(npcId); return; }
+        if (!isPlayer && (isOnSnake(head, npcSnake) || isOnSnake(head, npcSnake2) || isOnSnake(head, npcSnake3))) {
+            respawnNPC(npcId); return;
         }
 
-        // Verifica colisão com as cobras (exceto na cabeça do jogador que pode se mover)
-        if (!isPlayer) {
-            if (isOnSnake(head, snake) || isOnSnake(head, npcSnake) || isOnSnake(head, npcSnake2)) {
-                // NPC tenta mudar direção na próxima atualização (não move)
-                return;
-            }
-        }
-
-        // Checa comida
         let ateFood = false;
         for (let i = 0; i < foods.length; i++) {
             if (foods[i].x === head.x && foods[i].y === head.y) {
@@ -320,151 +261,123 @@ $(document).ready(function () {
                     score += 5;
                     $('#score').text(score);
                     if (score % 6 === 0) STEP = Math.max(100, STEP - 12);
-                   eatSound.play();  // <-- TOCA O SOM AQUI
+                    eatSound.play();
                 }
                 break;
             }
         }
 
-        // Insere nova cabeça
-        snakeRef.unshift(head);
-
-        if (!ateFood) {
-            snakeRef.pop();
-        }
+    snakeRef.unshift(head);
+        if (!ateFood) snakeRef.pop();
     }
 
-    // Direção aleatória segura considerando obstáculos e outras cobras
-    function getSafeRandomDirection(snakeRef) {
-        const directions = ['up', 'down', 'left', 'right'];
-        const currentHead = snakeRef[0];
-        const validDirs = directions.filter(dir => {
-            let newX = currentHead.x;
-            let newY = currentHead.y;
+    function respawnNPC(npcId) {
+        let newPos;
+        do {
+            newPos = { x: Math.floor(Math.random() * gridSize), y: Math.floor(Math.random() * gridSize) };
+        } while (
+            isOnSnake(newPos, snake) || isOnSnake(newPos, npcSnake) ||
+            isOnSnake(newPos, npcSnake2) || isOnSnake(newPos, npcSnake3) || isOnObstacles(newPos)
+        );
 
-            switch (dir) {
-                case 'up': newY--; break;
-                case 'down': newY++; break;
-                case 'left': newX--; break;
-                case 'right': newX++; break;
-            }
-
-            const collisionWithWall = newX < 0 || newX >= gridSize || newY < 0 || newY >= gridSize;
-            const collisionWithSelf = snakeRef.some(s => s.x === newX && s.y === newY);
-            const collisionWithObstacle = isOnObstacles({ x: newX, y: newY });
-            // Para NPCs, evita colidir com outras cobras também
-            const collisionWithOtherSnakes = isOnSnake({ x: newX, y: newY }, snake) || isOnSnake({ x: newX, y: newY }, npcSnake) || isOnSnake({ x: newX, y: newY }, npcSnake2);
-
-            return !collisionWithWall && !collisionWithSelf && !collisionWithObstacle && !collisionWithOtherSnakes;
-        });
-
-        return validDirs.length ? validDirs[Math.floor(Math.random() * validDirs.length)] : null;
+        if (npcId === 'npc1') npcSnake = [newPos];
+        if (npcId === 'npc2') npcSnake2 = [newPos];
+        if (npcId === 'npc3') npcSnake3 = [newPos];
     }
 
-    // Verifica se está em obstáculos
-    function isOnObstacles(pos) {
-        return obstacles.some(ob => ob.x === pos.x && ob.y === pos.y);
+    function getSafeRandomDirection(snakeRef, npcId = null) {
+    const directions = ['up', 'down', 'left', 'right'];
+    const currentHead = snakeRef[0];
+    const validDirs = directions.filter(dir => {
+        const nextPos = getNextPosition(currentHead, dir);
+        const collisionWithWall =
+            nextPos.x < 0 || nextPos.x >= gridSize ||
+            nextPos.y < 0 || nextPos.y >= gridSize;
+        const collisionWithSelf = isOnSnake(nextPos, snakeRef);
+        const collisionWithObstacle = isOnObstacles(nextPos);
+        const collisionWithOthers =
+            isOnSnake(nextPos, snake) ||
+            isOnSnake(nextPos, npcSnake) ||
+            isOnSnake(nextPos, npcSnake2) ||
+            isOnSnake(nextPos, npcSnake3);
+
+        return !collisionWithWall &&
+               !collisionWithSelf &&
+               !collisionWithObstacle &&
+               !collisionWithOthers;
+    });
+
+    // 🔴 Se não há movimento possível → NPC está travado
+    if (validDirs.length === 0) {
+        if (npcId) respawnNPC(npcId);
+        return null;
     }
+
+    return validDirs[Math.floor(Math.random() * validDirs.length)];
+}
+
+    function isOnObstacles(pos) { return obstacles.some(ob => ob.x === pos.x && ob.y === pos.y); }
 
     function generateFood() {
         let foodPosition;
         do {
-            foodPosition = {
-                x: Math.floor(Math.random() * gridSize),
-                y: Math.floor(Math.random() * gridSize)
-            };
+            foodPosition = { x: Math.floor(Math.random() * gridSize), y: Math.floor(Math.random() * gridSize) };
         } while (
-            isOnSnake(foodPosition, snake) ||
-            isOnSnake(foodPosition, npcSnake) ||
-            isOnSnake(foodPosition, npcSnake2) ||
-            isOnFood(foodPosition) ||
-            isOnObstacles(foodPosition)
+            isOnSnake(foodPosition, snake) || isOnSnake(foodPosition, npcSnake) ||
+            isOnSnake(foodPosition, npcSnake2) || isOnSnake(foodPosition, npcSnake3) ||
+            isOnFood(foodPosition) || isOnObstacles(foodPosition)
         );
 
         foods.push(foodPosition);
     }
 
-    function isOnSnake(pos, snakeRef) {
-        return snakeRef.some(segment => segment.x === pos.x && segment.y === pos.y);
-    }
-
-    function isOnFood(pos) {
-        return foods.some(food => food.x === pos.x && food.y === pos.y);
-    }
+    function isOnSnake(pos, snakeRef) { return snakeRef.some(segment => segment.x === pos.x && segment.y === pos.y); }
+    function isOnFood(pos) { return foods.some(food => food.x === pos.x && food.y === pos.y); }
 
     function checkPlayerCollisions() {
         const head = snake[0];
-
-        if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
-            endGame();
-            return;
-        }
-
-        if (isOnObstacles(head)) {
-            endGame();
-            return;
-        }
-
-        for (let i = 1; i < snake.length; i++) {
-            if (head.x === snake[i].x && head.y === snake[i].y) {
-                endGame();
-                return;
-            }
-        }
-
-        for (const segment of npcSnake) {
-            if (head.x === segment.x && head.y === segment.y) {
-                endGame();
-                return;
-            }
-        }
-
-        for (const segment of npcSnake2) {
-            if (head.x === segment.x && head.y === segment.y) {
-                endGame();
-                return;
-            }
-        }
+        if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) return endGame();
+        if (isOnObstacles(head)) return endGame();
+        for (let i = 1; i < snake.length; i++) if (head.x === snake[i].x && head.y === snake[i].y) return endGame();
+        for (const segment of npcSnake) if (head.x === segment.x && head.y === segment.y) return endGame();
+        for (const segment of npcSnake2) if (head.x === segment.x && head.y === segment.y) return endGame();
+        for (const segment of npcSnake3) if (head.x === segment.x && head.y === segment.y) return endGame();
     }
 
     function draw() {
         ctx.fillStyle = '#89fa66ff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+
+
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
         drawGrid();
 
-        // Obstáculos - laranja
-        ctx.fillStyle = '#ff830fff';
-        for (const ob of obstacles) {
-            ctx.fillRect(ob.x * tileSize, ob.y * tileSize, tileSize, tileSize);
-        }
 
-        // jogador - preto
-        ctx.fillStyle = '#000000';
-        for (const s of snake) {
-            ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize, tileSize);
-        }
+    ctx.fillStyle = '#ff830fff';
+        for (const ob of obstacles) ctx.fillRect(ob.x * tileSize, ob.y * tileSize, tileSize, tileSize);
 
-        // NPC1 - azul escuro
-        ctx.fillStyle = '#0000cc';
-        for (const s of npcSnake) {
-            ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize, tileSize);
-        }
 
-        // NPC2 - verde escuro (diferente das outras)
-        ctx.fillStyle = '#006400';
-        for (const s of npcSnake2) {
-            ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize, tileSize);
-        }
 
-        // comidas - vermelho vivo
-        ctx.fillStyle = '#ff3333';
-        for (const food of foods) {
-            ctx.fillRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize);
-        }
+    ctx.fillStyle = '#000000';
+
+        for (const s of snake) ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize, tileSize);
+
+
+    ctx.fillStyle = '#0000cc';
+        for (const s of npcSnake) ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize, tileSize);
+
+        
+    ctx.fillStyle = '#006400';
+        for (const s of npcSnake2) ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize, tileSize);
+
+    ctx.fillStyle = '#800080';
+        for (const s of npcSnake3) ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize, tileSize);
+
+    ctx.fillStyle = '#ff3333';
+        for (const food of foods) ctx.fillRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize);
     }
 
-    function endGame() {
+function endGame() {
         gameOver = true;
 
         if (score > highScore) {
@@ -482,13 +395,10 @@ $(document).ready(function () {
         ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 10);
         ctx.font = "10px 'Press Start 2P', monospace";
         ctx.fillText("Restarting...", canvas.width / 2, canvas.height / 2 + 20);
-
-        setTimeout(() => {
-            drawStartScreen();
-            gameStarted = false;
-        }, 1500);
+        setTimeout(() => { drawStartScreen(); gameStarted = false; }, 1500);
     }
 
+    
     // CONTROLES DE TECLADO
     $(document).on('keydown', function (e) {
         if (!gameStarted && e.code === "Space") return startGame();
@@ -499,54 +409,55 @@ $(document).ready(function () {
         if ((key === 'ArrowDown' || key === 's') && direction !== 'up') direction = 'down';
         if ((key === 'ArrowLeft' || key === 'a') && direction !== 'right') direction = 'left';
         if ((key === 'ArrowRight' || key === 'd') && direction !== 'left') direction = 'right';
-
-        // Trocar nível (1 e 2) via teclas N e M para teste (opcional)
+        
         if (key === 'n') currentLevel = 1;
         if (key === 'm') currentLevel = 2;
+
     });
 
-    // CONTROLES MOBILE - TOQUE E BOTÕES
+    // CONTROLES MOBILE
     $(canvas).on('click touchstart', function () {
         if (!gameStarted || gameOver) startGame();
     });
 
 
-    // SWIPE MOBILE
-    let touchStartX = 0, touchStartY = 0;
-    $(canvas).on('touchstart', function (e) {
-        const touch = e.originalEvent.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-    });
+// SWIPE MOBILE
+let touchStartX = 0, touchStartY = 0;
+$(canvas).on('touchstart', function (e) {
+    const touch = e.originalEvent.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+});
 
-    $(canvas).on('touchend', function (e) {
-        const touch = e.originalEvent.changedTouches[0];
-        const deltaX = touch.clientX - touchStartX;
-        const deltaY = touch.clientY - touchStartY;
+$(canvas).on('touchend', function (e) {
+    const touch = e.originalEvent.changedTouches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
 
 
-        const swipeThreshold = 20;
+    const swipeThreshold = 20;
 
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            if (deltaX > swipeThreshold && direction !== 'left') direction = 'right';
-            else if (deltaX < -swipeThreshold && direction !== 'right') direction = 'left';
-        } else {
-            if (deltaY > swipeThreshold && direction !== 'up') direction = 'down';
-            else if (deltaY < -swipeThreshold && direction !== 'down') direction = 'up';
-        }
-        e.preventDefault();
-    });
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > swipeThreshold && direction !== 'left') direction = 'right';
+        else if (deltaX < -swipeThreshold && direction !== 'right') direction = 'left';
+    } else {
+        if (deltaY > swipeThreshold && direction !== 'up') direction = 'down';
+        else if (deltaY < -swipeThreshold && direction !== 'down') direction = 'up';
+    }
+    e.preventDefault();
+});
 
-    // BOTÕES CONTROLE MOBILE
-    $('#mobile-controls button').on('click', function () {
-        const dir = $(this).data('dir');
-        if (dir === 'up' && direction !== 'down') direction = 'up';
-        if (dir === 'down' && direction !== 'up') direction = 'down';
-        if (dir === 'left' && direction !== 'right') direction = 'left';
-        if (dir === 'right' && direction !== 'left') direction = 'right';
-    });
+// BOTÕES CONTROLE MOBILE
+$('#mobile-controls button').on('click', function () {
+    const dir = $(this).data('dir');
+    if (dir === 'up' && direction !== 'down') direction = 'up';
+    if (dir === 'down' && direction !== 'up') direction = 'down';
+    if (dir === 'left' && direction !== 'right') direction = 'left';
+    if (dir === 'right' && direction !== 'left') direction = 'right';
+});
 
-    drawStartScreen();
+drawStartScreen();
+
 });
 
 // --- FIM DO CÓDIGO ---
