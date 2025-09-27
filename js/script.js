@@ -15,7 +15,7 @@ $(document).ready(function () {
 
     let lastTime = 0;
     let accumulator = 0;
-    let STEP = 200; // Velocidade lógica da cobra em ms (pode diminuir)
+    let STEP = 250; // Velocidade lógica da cobra em ms (pode diminuir)
 
     $('#high-score').text(highScore);
 
@@ -39,7 +39,7 @@ $(document).ready(function () {
         score = 0;
         $('#score').text(score);
         gameOver = false;
-        STEP = 200;
+        STEP = 250;
         generateFood();
 
         lastTime = 0;
@@ -81,13 +81,13 @@ $(document).ready(function () {
 
         // Comer maçã
         if (head.x === food.x && head.y === food.y) {
-            score += 2;
+            score += 5;
             $('#score').text(score);
             generateFood();
 
             // 🔥 Diminui o STEP (aumenta velocidade) a cada 3 maçãs
             if (score % 6 === 0) {
-                STEP = Math.max(100, STEP - 10);
+                STEP = Math.max(100, STEP - 12);
             }
 
         } else {
@@ -203,7 +203,7 @@ $(document).ready(function () {
         }
     });
 
-    
+
     drawStartScreen();
 
   // === SWIPE DETECTION SEM LAG ===
