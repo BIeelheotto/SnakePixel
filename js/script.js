@@ -1,4 +1,4 @@
-$(document).ready(function() {
+$(document).ready(function () {
     const canvas = $('#gameCanvas')[0];
     const ctx = canvas.getContext('2d');
 
@@ -11,13 +11,14 @@ $(document).ready(function() {
     let score = 0;
     let highScore = localStorage.getItem('snakeHighScore') || 0;
     let gameOver = false;
-    let gameInterval;
-    let snakeSpeed = 250; // velocidade inicial lenta
     let gameStarted = false;
+
+    let lastTime = 0;
+    let accumulator = 0;
+    let STEP = 200; // Velocidade lógica da cobra em ms (pode diminuir)
 
     $('#high-score').text(highScore);
 
-    /** Desenha tela inicial */
     function drawStartScreen() {
         ctx.fillStyle = '#7ed957';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -31,7 +32,6 @@ $(document).ready(function() {
         ctx.fillText("Press SPACE or Tap", canvas.width / 2, canvas.height / 2 + 20);
     }
 
-    /** Inicia o jogo */
     function startGame() {
         gameStarted = true;
         snake = [{ x: 10, y: 10 }];
@@ -39,17 +39,32 @@ $(document).ready(function() {
         score = 0;
         $('#score').text(score);
         gameOver = false;
-        snakeSpeed = 200;
+        STEP = 200;
         generateFood();
 
-        if (gameInterval) clearInterval(gameInterval);
-        gameInterval = setInterval(gameLoop, snakeSpeed);
+        lastTime = 0;
+        accumulator = 0;
+        requestAnimationFrame(gameLoop);
     }
 
-    function gameLoop() {
-        if (gameOver) return;
-        update();
-        draw();
+    function gameLoop(timestamp) {
+        if (!lastTime) lastTime = timestamp;
+        const deltaTime = timestamp - lastTime;
+        lastTime = timestamp;
+
+        accumulator += deltaTime;
+
+        while (accumulator >= STEP) {
+            update();
+            accumulator -= STEP;
+        }
+
+        const interpolation = accumulator / STEP;
+        draw(interpolation);
+
+        if (!gameOver) {
+            requestAnimationFrame(gameLoop);
+        }
     }
 
     function update() {
@@ -66,15 +81,15 @@ $(document).ready(function() {
 
         // Comer maçã
         if (head.x === food.x && head.y === food.y) {
-            score += 2; // ✅ agora vale 2 pontos
+            score += 2;
             $('#score').text(score);
             generateFood();
 
-            if (score % 6 === 0) { // aumenta dificuldade a cada 3 maçãs
-                snakeSpeed = Math.max(60, snakeSpeed - 20);
-                clearInterval(gameInterval);
-                gameInterval = setInterval(gameLoop, snakeSpeed);
+            // 🔥 Diminui o STEP (aumenta velocidade) a cada 3 maçãs
+            if (score % 6 === 0) {
+                STEP = Math.max(100, STEP - 10);
             }
+
         } else {
             snake.pop();
         }
@@ -83,11 +98,10 @@ $(document).ready(function() {
     }
 
     function checkCollisions(head) {
-        // Colisão com parede
         if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
             endGame();
         }
-        // Colisão com corpo
+
         for (let i = 1; i < snake.length; i++) {
             if (head.x === snake[i].x && head.y === snake[i].y) {
                 endGame();
@@ -95,15 +109,21 @@ $(document).ready(function() {
         }
     }
 
-    function draw() {
+    function draw(interpolation) {
         ctx.fillStyle = '#7ed957';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Cobra
+        // Cobra com interpolação suave
         ctx.fillStyle = '#000';
-        snake.forEach(segment => {
-            ctx.fillRect(segment.x * tileSize, segment.y * tileSize, tileSize, tileSize);
-        });
+        for (let i = 0; i < snake.length; i++) {
+            const current = snake[i];
+            const prev = snake[i + 1] || current;
+
+            const x = prev.x + (current.x - prev.x) * interpolation;
+            const y = prev.y + (current.y - prev.y) * interpolation;
+
+            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        }
 
         // Comida
         ctx.fillStyle = '#ff0000';
@@ -127,7 +147,6 @@ $(document).ready(function() {
 
     function endGame() {
         gameOver = true;
-        clearInterval(gameInterval);
 
         if (score > highScore) {
             highScore = score;
@@ -135,7 +154,6 @@ $(document).ready(function() {
             $('#high-score').text(highScore);
         }
 
-        // Mensagem de Game Over
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -146,7 +164,6 @@ $(document).ready(function() {
         ctx.font = "10px 'Press Start 2P', monospace";
         ctx.fillText("Restarting...", canvas.width / 2, canvas.height / 2 + 20);
 
-        // Reinício automático em 2s
         setTimeout(() => {
             if (!gameStarted || gameOver) {
                 drawStartScreen();
@@ -155,8 +172,8 @@ $(document).ready(function() {
         }, 400);
     }
 
-    // Controles teclado
-    $(document).on('keydown', function(e) {
+    // Teclado
+    $(document).on('keydown', function (e) {
         if (!gameStarted && e.code === "Space") {
             startGame();
             return;
@@ -179,19 +196,17 @@ $(document).ready(function() {
         }
     });
 
-    // Mobile → toque para iniciar ou reiniciar
-    $(canvas).on('click touchstart', function() {
-        if (!gameStarted) {
-            startGame();
-        } else if (gameOver) {
+    // Mobile → toque
+    $(canvas).on('click touchstart', function () {
+        if (!gameStarted || gameOver) {
             startGame();
         }
     });
 
-        // Início
+    
     drawStartScreen();
 
-         // === SWIPE DETECTION SEM LAG ===
+  // === SWIPE DETECTION SEM LAG ===
     let touchStartX = 0;
     let touchStartY = 0;
 
