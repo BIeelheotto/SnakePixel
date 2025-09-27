@@ -14,7 +14,7 @@ $(document).ready(function() {
     let highScore = localStorage.getItem('snakeHighScore') || 0;
     let gameOver = false;
     let gameInterval;
-    let snakeSpeed = 170; // velocidade inicial em ms
+    let snakeSpeed = 220; // velocidade inicial em ms
 
     $('#high-score').text(highScore);
 
@@ -26,7 +26,7 @@ $(document).ready(function() {
         score = 0;
         $('#score').text(score);
         gameOver = false;
-        snakeSpeed = 100; // reseta a velocidade inicial
+        snakeSpeed = 220; // reseta a velocidade inicial
         generateFood();
 
         if (gameInterval) clearInterval(gameInterval);
