@@ -200,7 +200,7 @@ $(document).ready(function() {
         const dx = touchX - startX;
         const dy = touchY - startY;
 
-        if (Math.abs(dx) > 30 || Math.abs(dy) > 30) {
+        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
             if (Math.abs(dx) > Math.abs(dy)) {
                 if (dx > 0 && direction !== 'left') {
                     direction = 'right';
