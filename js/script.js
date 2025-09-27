@@ -5,32 +5,32 @@ $(document).ready(function () {
     const tileSize = 20;
     const gridSize = canvas.width / tileSize;
 
-let currentLevel = 1;
+    let currentLevel = 1;
 
-let snake = [];
-let npcSnake = [];
-let npcSnake2 = [];
-let npcSnake3 = [];
-let direction = 'right';
-let npcDirection = 'left';
-let npcDirection2 = 'right';
- let npcDirection3 = 'up';
+    let snake = [];
+    let npcSnake = [];
+    let npcSnake2 = [];
+    let npcSnake3 = [];
+    let direction = 'right';
+    let npcDirection = 'left';
+    let npcDirection2 = 'right';
+    let npcDirection3 = 'up';
 
- let foods = [];
- let score = 0;
-let highScore = parseInt(localStorage.getItem('snakeHighScore')) || 0;
-let gameOver = false;
-let gameStarted = false;
+    let foods = [];
+    let score = 0;
+    let highScore = parseInt(localStorage.getItem('snakeHighScore')) || 0;
+    let gameOver = false;
+    let gameStarted = false;
 
-let lastTime = 0;
-let accumulator = 0;
-let STEP = 250;
+    let lastTime = 0;
+    let accumulator = 0;
+    let STEP = 350;
 
-let showMessage = true;
-let obstacles = [];
+    let showMessage = true;
+    let obstacles = [];
 
-const eatSound = new Audio('/assets/assets_audio.mp3');
-const initialFoodCount = 3;
+    const eatSound = new Audio('/assets/assets_audio.mp3');
+    const initialFoodCount = 4;
 
     $('#high-score').text(highScore);
 
@@ -51,18 +51,18 @@ const initialFoodCount = 3;
         }
     }, 500);
 
-function drawStartScreen() {
-    ctx.fillStyle = '#19d108ff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    function drawStartScreen() {
+        ctx.fillStyle = '#19d108ff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         drawGrid();
 
-    ctx.fillStyle = '#020202ff';
-    ctx.font = "28px 'Press Start 2P', monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("CLASSIC SNAKE", canvas.width / 2, canvas.height / 2 - 40);
+        ctx.fillStyle = '#020202ff';
+        ctx.font = "28px 'Press Start 2P', monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("CLASSIC SNAKE", canvas.width / 2, canvas.height / 2 - 40);
 
-    ctx.font = "16px 'Press Start 2P', monospace";
-    ctx.fillText("Nível Atual: " + currentLevel, canvas.width / 2, canvas.height / 2);
+        ctx.font = "16px 'Press Start 2P', monospace";
+        ctx.fillText("Nível Atual: " + currentLevel, canvas.width / 2, canvas.height / 2);
 
         if (showMessage) {
             ctx.font = "12px 'Press Start 2P', monospace";
@@ -71,7 +71,7 @@ function drawStartScreen() {
         }
     }
 
-function drawGrid() {
+    function drawGrid() {
         ctx.strokeStyle = '#615f5fff';
         ctx.lineWidth = 1;
         for (let x = 0; x <= canvas.width; x += tileSize) {
@@ -102,12 +102,12 @@ function drawGrid() {
         npcSnake3 = [{ x: 15, y: 15 }];
 
         score = 0;
-        STEP = 250;
+        STEP = 350;
         $('#score').text(score);
         updateSizeDisplay();
 
-obstacles = [];
-    if (currentLevel === 2) {
+        obstacles = [];
+        if (currentLevel === 2) {
             for (let i = 5; i < 15; i++) {
                 obstacles.push({ x: i, y: 10 });
             }
@@ -127,15 +127,15 @@ obstacles = [];
         if (!lastTime) lastTime = timestamp;
         const deltaTime = timestamp - lastTime;
 
-    lastTime = timestamp;
-    accumulator += deltaTime;
+        lastTime = timestamp;
+        accumulator += deltaTime;
 
         while (accumulator >= STEP) {
             update();
             accumulator -= STEP;
         }
 
-    draw();
+        draw();
         if (!gameOver) requestAnimationFrame(gameLoop);
     }
 
@@ -154,34 +154,34 @@ obstacles = [];
         updateSizeDisplay();
     }
 
-function updateNPCDirection() {
-    npcDirection = getFoodChasingDirection(npcSnake, [snake, npcSnake2, npcSnake3]) 
-                || getSafeRandomDirection(npcSnake, 'npc1') 
-                || npcDirection;
-}
-
-function updateNPCDirection2() {
-    npcDirection2 = getFoodChasingDirection(npcSnake2, [snake, npcSnake, npcSnake3]) 
-                 || getSafeRandomDirection(npcSnake2, 'npc2') 
-                 || npcDirection2;
-}
-
-function updateNPCDirection3() {
-    if (Math.random() < 0.3) {
-        npcDirection3 = getSafeRandomDirection(npcSnake3, 'npc3') || npcDirection3;
-    } else {
-        npcDirection3 = getFoodChasingDirection(npcSnake3, [snake, npcSnake, npcSnake2]) 
-                     || getSafeRandomDirection(npcSnake3, 'npc3') 
-                     || npcDirection3;
+    function updateNPCDirection() {
+        npcDirection = getFoodChasingDirection(npcSnake, [snake, npcSnake2, npcSnake3])
+            || getSafeRandomDirection(npcSnake, 'npc1')
+            || npcDirection;
     }
-}
+
+    function updateNPCDirection2() {
+        npcDirection2 = getFoodChasingDirection(npcSnake2, [snake, npcSnake, npcSnake3])
+            || getSafeRandomDirection(npcSnake2, 'npc2')
+            || npcDirection2;
+    }
+
+    function updateNPCDirection3() {
+        if (Math.random() < 0.3) {
+            npcDirection3 = getSafeRandomDirection(npcSnake3, 'npc3') || npcDirection3;
+        } else {
+            npcDirection3 = getFoodChasingDirection(npcSnake3, [snake, npcSnake, npcSnake2])
+                || getSafeRandomDirection(npcSnake3, 'npc3')
+                || npcDirection3;
+        }
+    }
 
 
     // Pathfinding simples para buscar comida
     function getFoodChasingDirection(npcSnakeRef, otherSnakes) {
         if (npcSnakeRef.length === 0 || foods.length === 0) return getSafeRandomDirection(npcSnakeRef);
 
-    const head = npcSnakeRef[0];
+        const head = npcSnakeRef[0];
         let closestFood = foods[0];
         let minDist = manhattanDistance(head, closestFood);
 
@@ -193,13 +193,13 @@ function updateNPCDirection3() {
             }
         }
 
-    const possibleDirs = ['up', 'down', 'left', 'right'];
+        const possibleDirs = ['up', 'down', 'left', 'right'];
         let bestDir = null;
         let bestDist = Infinity;
 
         for (const dir of possibleDirs) {
 
-    const nextPos = getNextPosition(head, dir);
+            const nextPos = getNextPosition(head, dir);
             if (
                 nextPos.x >= 0 && nextPos.x < gridSize &&
                 nextPos.y >= 0 && nextPos.y < gridSize &&
@@ -267,20 +267,20 @@ function updateNPCDirection3() {
             }
         }
 
-    snakeRef.unshift(head);
+        snakeRef.unshift(head);
         if (!ateFood) snakeRef.pop();
     }
 
     let npcRespawnCooldowns = {
-    npc1: 0,
-    npc2: 0,
-    npc3: 0
-};
+        npc1: 0,
+        npc2: 0,
+        npc3: 0
+    };
 
-function respawnNPC(npcId) {
-    const now = Date.now();
-    if (npcRespawnCooldowns[npcId] && now - npcRespawnCooldowns[npcId] < 500) return;
-    npcRespawnCooldowns[npcId] = now;
+    function respawnNPC(npcId) {
+        const now = Date.now();
+        if (npcRespawnCooldowns[npcId] && now - npcRespawnCooldowns[npcId] < 500) return;
+        npcRespawnCooldowns[npcId] = now;
 
         let newPos;
         do {
@@ -296,79 +296,98 @@ function respawnNPC(npcId) {
     }
 
     function getSafeRandomDirection(snakeRef, npcId = null) {
-    const directions = ['up', 'down', 'left', 'right'];
-    const currentHead = snakeRef[0];
-    const validDirs = directions.filter(dir => {
-        const nextPos = getNextPosition(currentHead, dir);
-        const collisionWithWall =
-            nextPos.x < 0 || nextPos.x >= gridSize ||
-            nextPos.y < 0 || nextPos.y >= gridSize;
-        const collisionWithSelf = isOnSnake(nextPos, snakeRef);
-        const collisionWithObstacle = isOnObstacles(nextPos);
-        const collisionWithOthers =
-            isOnSnake(nextPos, snake) ||
-            isOnSnake(nextPos, npcSnake) ||
-            isOnSnake(nextPos, npcSnake2) ||
-            isOnSnake(nextPos, npcSnake3);
+        const directions = ['up', 'down', 'left', 'right'];
+        const currentHead = snakeRef[0];
+        const validDirs = directions.filter(dir => {
+            const nextPos = getNextPosition(currentHead, dir);
+            const collisionWithWall =
+                nextPos.x < 0 || nextPos.x >= gridSize ||
+                nextPos.y < 0 || nextPos.y >= gridSize;
+            const collisionWithSelf = isOnSnake(nextPos, snakeRef);
+            const collisionWithObstacle = isOnObstacles(nextPos);
+            const collisionWithOthers =
+                isOnSnake(nextPos, snake) ||
+                isOnSnake(nextPos, npcSnake) ||
+                isOnSnake(nextPos, npcSnake2) ||
+                isOnSnake(nextPos, npcSnake3);
 
-        return !collisionWithWall &&
-               !collisionWithSelf &&
-               !collisionWithObstacle &&
-               !collisionWithOthers;
-    });
+            return !collisionWithWall &&
+                !collisionWithSelf &&
+                !collisionWithObstacle &&
+                !collisionWithOthers;
+        });
 
-    // 🔴 Se não há movimento possível → NPC está travado
-    if (validDirs.length === 0) {
-        if (npcId) respawnNPC(npcId);
-        return null;
+        // 🔴 Se não há movimento possível → NPC está travado
+        if (validDirs.length === 0) {
+            if (npcId) respawnNPC(npcId);
+            return null;
+        }
+
+        return validDirs[Math.floor(Math.random() * validDirs.length)];
     }
-
-    return validDirs[Math.floor(Math.random() * validDirs.length)];
-}
 
     function isOnObstacles(pos) { return obstacles.some(ob => ob.x === pos.x && ob.y === pos.y); }
 
     function generateFood() {
-    const playerHead = snake[0];
-    const maxAttempts = 50;
-    let found = false;
-    let foodPosition;
+        const playerHead = snake[0];
+        const minDistanceFromPlayer = 4;
+        const minDistanceFromOtherFoods = 5;
+        const maxDistanceFromPlayer = 10;
+        const maxAttempts = 100;
+        let foodPosition;
+        let found = false;
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        let x = playerHead.x + Math.floor(Math.random() * 7) - 3;
-        let y = playerHead.y + Math.floor(Math.random() * 7) - 3;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            let dx = Math.floor(Math.random() * (2 * maxDistanceFromPlayer + 1)) - maxDistanceFromPlayer;
+            let dy = Math.floor(Math.random() * (2 * maxDistanceFromPlayer + 1)) - maxDistanceFromPlayer;
 
-        // Limita dentro da grade
-        x = Math.max(0, Math.min(gridSize - 1, x));
-        y = Math.max(0, Math.min(gridSize - 1, y));
+            if (Math.abs(dx) + Math.abs(dy) < minDistanceFromPlayer) continue;
 
-        foodPosition = { x, y };
+            let x = playerHead.x + dx;
+            let y = playerHead.y + dy;
 
-        if (
-            !isOnSnake(foodPosition, snake) &&
-            !isOnSnake(foodPosition, npcSnake) &&
-            !isOnSnake(foodPosition, npcSnake2) &&
-            !isOnSnake(foodPosition, npcSnake3) &&
-            !isOnFood(foodPosition) &&
-            !isOnObstacles(foodPosition)
-        ) {
-            found = true;
-            break;
+            if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) continue;
+
+            foodPosition = { x, y };
+
+            // 🚫 Verifica se é muito perto de outra comida existente
+            let tooCloseToFood = foods.some(existing =>
+                manhattanDistance(foodPosition, existing) < minDistanceFromOtherFoods
+            );
+
+            if (
+                !isOnSnake(foodPosition, snake) &&
+                !isOnSnake(foodPosition, npcSnake) &&
+                !isOnSnake(foodPosition, npcSnake2) &&
+                !isOnSnake(foodPosition, npcSnake3) &&
+                !isOnObstacles(foodPosition) &&
+                !tooCloseToFood
+            ) {
+                found = true;
+                break;
+            }
         }
-    }
 
-    if (!found) {
-        // fallback aleatório se nenhuma posição próxima estiver disponível
-        do {
-            foodPosition = { x: Math.floor(Math.random() * gridSize), y: Math.floor(Math.random() * gridSize) };
-        } while (
-            isOnSnake(foodPosition, snake) || isOnSnake(foodPosition, npcSnake) ||
-            isOnSnake(foodPosition, npcSnake2) || isOnSnake(foodPosition, npcSnake3) ||
-            isOnFood(foodPosition) || isOnObstacles(foodPosition)
-        );
-    }
+        // Fallback se não encontrar posição válida
+        if (!found) {
+            do {
+                foodPosition = {
+                    x: Math.floor(Math.random() * gridSize),
+                    y: Math.floor(Math.random() * gridSize)
+                };
+            } while (
+                isOnSnake(foodPosition, snake) ||
+                isOnSnake(foodPosition, npcSnake) ||
+                isOnSnake(foodPosition, npcSnake2) ||
+                isOnSnake(foodPosition, npcSnake3) ||
+                isOnFood(foodPosition) ||
+                isOnObstacles(foodPosition)
+            );
+        }
+
         foods.push(foodPosition);
     }
+
 
     function isOnSnake(pos, snakeRef) { return snakeRef.some(segment => segment.x === pos.x && segment.y === pos.y); }
     function isOnFood(pos) { return foods.some(food => food.x === pos.x && food.y === pos.y); }
@@ -388,35 +407,35 @@ function respawnNPC(npcId) {
 
 
 
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         drawGrid();
 
 
-    ctx.fillStyle = '#ff830fff';
+        ctx.fillStyle = '#ff830fff';
         for (const ob of obstacles) ctx.fillRect(ob.x * tileSize, ob.y * tileSize, tileSize, tileSize);
 
 
 
-    ctx.fillStyle = '#000000';
+        ctx.fillStyle = '#000000';
 
         for (const s of snake) ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize, tileSize);
 
 
-    ctx.fillStyle = '#0000cc';
+        ctx.fillStyle = '#0000cc';
         for (const s of npcSnake) ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize, tileSize);
 
-        
-    ctx.fillStyle = '#006400';
+
+        ctx.fillStyle = '#006400';
         for (const s of npcSnake2) ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize, tileSize);
 
-    ctx.fillStyle = '#800080';
+        ctx.fillStyle = '#800080';
         for (const s of npcSnake3) ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize, tileSize);
 
-    ctx.fillStyle = '#ff3333';
+        ctx.fillStyle = '#ff3333';
         for (const food of foods) ctx.fillRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize);
     }
 
-function endGame() {
+    function endGame() {
         gameOver = true;
 
         if (score > highScore) {
@@ -437,7 +456,7 @@ function endGame() {
         setTimeout(() => { drawStartScreen(); gameStarted = false; }, 1500);
     }
 
-    
+
     // CONTROLES DE TECLADO
     $(document).on('keydown', function (e) {
         if (!gameStarted && e.code === "Space") return startGame();
@@ -448,7 +467,7 @@ function endGame() {
         if ((key === 'ArrowDown' || key === 's') && direction !== 'up') direction = 'down';
         if ((key === 'ArrowLeft' || key === 'a') && direction !== 'right') direction = 'left';
         if ((key === 'ArrowRight' || key === 'd') && direction !== 'left') direction = 'right';
-        
+
         if (key === 'n') currentLevel = 1;
         if (key === 'm') currentLevel = 2;
 
@@ -460,42 +479,42 @@ function endGame() {
     });
 
 
-// SWIPE MOBILE
-let touchStartX = 0, touchStartY = 0;
-$(canvas).on('touchstart', function (e) {
-    const touch = e.originalEvent.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-});
+    // SWIPE MOBILE
+    let touchStartX = 0, touchStartY = 0;
+    $(canvas).on('touchstart', function (e) {
+        const touch = e.originalEvent.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+    });
 
-$(canvas).on('touchend', function (e) {
-    const touch = e.originalEvent.changedTouches[0];
-    const deltaX = touch.clientX - touchStartX;
-    const deltaY = touch.clientY - touchStartY;
+    $(canvas).on('touchend', function (e) {
+        const touch = e.originalEvent.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
 
 
-    const swipeThreshold = 15; // melhor responsividade
+        const swipeThreshold = 15; // melhor responsividade
 
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        if (deltaX > swipeThreshold && direction !== 'left') direction = 'right';
-        else if (deltaX < -swipeThreshold && direction !== 'right') direction = 'left';
-    } else {
-        if (deltaY > swipeThreshold && direction !== 'up') direction = 'down';
-        else if (deltaY < -swipeThreshold && direction !== 'down') direction = 'up';
-    }
-    e.preventDefault();
-});
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX > swipeThreshold && direction !== 'left') direction = 'right';
+            else if (deltaX < -swipeThreshold && direction !== 'right') direction = 'left';
+        } else {
+            if (deltaY > swipeThreshold && direction !== 'up') direction = 'down';
+            else if (deltaY < -swipeThreshold && direction !== 'down') direction = 'up';
+        }
+        e.preventDefault();
+    });
 
-// BOTÕES CONTROLE MOBILE
-$('#mobile-controls button').on('click', function () {
-    const dir = $(this).data('dir');
-    if (dir === 'up' && direction !== 'down') direction = 'up';
-    if (dir === 'down' && direction !== 'up') direction = 'down';
-    if (dir === 'left' && direction !== 'right') direction = 'left';
-    if (dir === 'right' && direction !== 'left') direction = 'right';
-});
+    // BOTÕES CONTROLE MOBILE
+    $('#mobile-controls button').on('click', function () {
+        const dir = $(this).data('dir');
+        if (dir === 'up' && direction !== 'down') direction = 'up';
+        if (dir === 'down' && direction !== 'up') direction = 'down';
+        if (dir === 'left' && direction !== 'right') direction = 'left';
+        if (dir === 'right' && direction !== 'left') direction = 'right';
+    });
 
-drawStartScreen();
+    drawStartScreen();
 
 });
 
