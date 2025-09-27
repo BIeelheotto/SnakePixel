@@ -12,7 +12,7 @@ $(document).ready(function() {
     let highScore = localStorage.getItem('snakeHighScore') || 0;
     let gameOver = false;
     let gameInterval;
-    let snakeSpeed = 200; // velocidade inicial lenta
+    let snakeSpeed = 250; // velocidade inicial lenta
     let gameStarted = false;
 
     $('#high-score').text(highScore);
@@ -71,7 +71,7 @@ $(document).ready(function() {
             generateFood();
 
             if (score % 6 === 0) { // aumenta dificuldade a cada 3 maçãs
-                snakeSpeed = Math.max(50, snakeSpeed - 20);
+                snakeSpeed = Math.max(60, snakeSpeed - 20);
                 clearInterval(gameInterval);
                 gameInterval = setInterval(gameLoop, snakeSpeed);
             }
