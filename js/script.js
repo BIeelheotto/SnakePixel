@@ -190,9 +190,8 @@ $(document).ready(function() {
 
     // Início
     drawStartScreen();
-});
 
-    // === SWIPE DETECTION PARA MOBILE ===
+ // === SWIPE DETECTION PARA MOBILE ===
     let touchStartX = 0;
     let touchStartY = 0;
     let touchEndX = 0;
@@ -233,3 +232,6 @@ $(document).ready(function() {
     $(canvas).on('touchend', function(e) {
         handleGesture();
     });
+});
+
+   
