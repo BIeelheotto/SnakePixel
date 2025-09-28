@@ -491,10 +491,18 @@ $(document).ready(function () {
 
     });
 
-    // CONTROLES MOBILE
-    $(canvas).on('click touchstart', function () {
-        if (!gameStarted || gameOver) startGame();
-    });
+   // CONTROLES MOBILE
+$(canvas).on('click touchstart', function () {
+    // 🔊 Garante que a música comece na primeira interação
+    if (bgMusic.paused) {
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(err => console.log("Audio bloqueado:", err));
+    }
+
+    // Só depois inicia o jogo
+    if (!gameStarted || gameOver) startGame();
+});
+
 
 
     // SWIPE MOBILE
