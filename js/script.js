@@ -12,7 +12,7 @@ $(document).ready(function () {
 
     let currentLevel = 1;
 
-    let snake = [];
+    let snake = []; 
     let npcSnake = [];
     let npcSnake2 = [];
     let npcSnake3 = [];
