@@ -68,3 +68,19 @@ body {
  #gameCanvas {
     touch-action: none;
 }
+
+#mute-btn {
+    font-size: 16px;
+    padding: 5px 10px;
+    margin-left: 15px;
+    border: none;
+    border-radius: 5px;
+    background: #444;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#mute-btn:hover {
+    background: #666;
+}

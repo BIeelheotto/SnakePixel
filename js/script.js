@@ -4,11 +4,22 @@ $(document).ready(function () {
 
     const tileSize = 20;
     const gridSize = canvas.width / tileSize;
+
     const bgMusic = new Audio('/assets/music-for-gameSNAKE.mp3');
     bgMusic.loop = true;  // música em loop
     bgMusic.volume = 0.3; // volume mais baixo pra não incomodar
 
     const gameOverSound = new Audio('/assets/GAME-OVER.mp3');
+
+ $("#mute-btn").on("click", function () {
+        if (bgMusic.paused) {
+            bgMusic.play();
+            $(this).text("🔊");
+        } else {
+            bgMusic.pause();
+            $(this).text("🔇");
+        }
+    });
 
     let currentLevel = 1;
 
@@ -33,6 +44,7 @@ $(document).ready(function () {
 
     let showMessage = true;
     let obstacles = [];
+    let paused = false; // controla se o jogo está pausado
 
     const eatSound = new Audio('/assets/assets_audio.mp3');
     const initialFoodCount = 4;
@@ -137,20 +149,23 @@ $(document).ready(function () {
     }
 
     function gameLoop(timestamp) {
-        if (!lastTime) lastTime = timestamp;
-        const deltaTime = timestamp - lastTime;
+    if (!lastTime) lastTime = timestamp;
+    const deltaTime = timestamp - lastTime;
 
-        lastTime = timestamp;
-        accumulator += deltaTime;
+    lastTime = timestamp;
+    accumulator += deltaTime;
 
+    if (!paused) { // <<<<< só atualiza se não estiver pausado
         while (accumulator >= STEP) {
             update();
             accumulator -= STEP;
         }
-
-        draw();
-        if (!gameOver) requestAnimationFrame(gameLoop);
     }
+
+    draw();
+    if (!gameOver) requestAnimationFrame(gameLoop);
+}
+
 
     function update() {
         updateNPCDirection();
